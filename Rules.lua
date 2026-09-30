@@ -161,6 +161,10 @@ function Rules.Score(text)
     local seen = {}
     for _, word in ipairs(words(line)) do
         local entry = single[word]
+        -- a listed word with an "s" on it is the same word ("pedos", "trumps"); a word ending in "ss" is not
+        if not entry and #word > 4 and string.sub(word, -1) == "s" and string.sub(word, -2) ~= "ss" then
+            entry = single[string.sub(word, 1, -2)] or (string.sub(word, -2) == "es" and single[string.sub(word, 1, -3)]) or nil
+        end
         if entry and not seen[word] then
             seen[word] = true
             hit(word, entry.weight, entry.kind)

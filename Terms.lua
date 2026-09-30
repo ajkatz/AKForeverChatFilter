@@ -230,7 +230,9 @@ Terms.LISTS = {
         "transphobic", "homophobic", "homophobe", "white people", "black people", "white supremacy",
         "supremacist", "supremacists", "slavery", "colonialism",
         -- a crime story is the world's too
-        "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedo", "rapist", "molested",
+        "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedophiles", "pedo", "pedos",
+        "paedophile", "paedophiles", "paedo", "paedos", "pedophilia", "pedofile", "pedofiles", "nonce", "nonces",
+        "rapist", "rapists", "molested", "molester",
         -- the sexual and the political slang of this chat (from the training answers, 2026-09-30)
         "trans", "dick", "cock", "pussy", "porn", "nudes", "onlyfans", "horny", "chud", "chuds", "milady",
         "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
