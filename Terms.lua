@@ -290,6 +290,9 @@ Terms.NEUTRAL = { "trade chat", "trade channel", "general chat", "in trade", "on
 -- Things that are not words: a hyperlink is the strongest sign of all, a sum of gold nearly as strong,
 -- a web address the opposite. Patterns in Lua's own dialect, run on the lower-cased line.
 Terms.PATTERNS = {
+    -- a line that opens with "imagine ..." is bait, whatever follows (the user's call, 2026-09-30)
+    { weight = -3, kind = "world", name = "an 'imagine ...' opener", pattern = "^%s*imagine%f[%W]" },
+    { weight = -3, kind = "world", name = "an 'imagine ...' opener", pattern = "^%s*l[om][la]o?%s+imagine%f[%W]" },
     { weight = 3, kind = "talk", name = "a link", pattern = "|h%[[^%]]+%]|h" },   -- an item, spell, quest, ... link
     { weight = 2, kind = "guilds", name = "a <guild>", pattern = "<[^<>]+>" },    -- a guild's name
     { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*g%f[%W]" },              -- 50g, 5 g
