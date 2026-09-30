@@ -2,7 +2,7 @@
 
 ## 0.1.0
 
-For **World of Warcraft: Forever** (1.60.1, Interface 16001). The Great Trade Filter: Trade chat shows trade.
+For **World of Warcraft: Forever** (1.60.1, Interface 16001). Trade chat shows trade.
 
 - Every Trade line is scored by its words: game business counts up (an item link, WTS/WTB/LF, gold, a
   profession, a dungeon, a zone, a class), the world outside counts down (a politician past or present,

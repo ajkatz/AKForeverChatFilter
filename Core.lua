@@ -22,7 +22,7 @@ if string.find(ns.version, "@", 1, true) then
 end
 ns.version = (string.gsub(ns.version, "^v", ""))
 
-local PRINT_PREFIX = "|cff5ac8e8Great Trade Filter|r: "
+local PRINT_PREFIX = "|cff5ac8e8AKForeverTradeFilter|r: "
 
 function ns:Print(...)
     local parts = {}

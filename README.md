@@ -1,4 +1,4 @@
-# AKForeverTradeFilter - The Great Trade Filter
+# AKForeverTradeFilter
 
 For **World of Warcraft: Forever** (1.60.1, Interface 16001). Trade chat shows trade.
 

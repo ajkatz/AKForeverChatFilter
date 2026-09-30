@@ -121,7 +121,7 @@ local function build()
     local w = widgets
     w.title = text(window, "GameFontNormal")
     w.title:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -10)
-    w.title:SetText("The Great Trade Filter")
+    w.title:SetText("AKForeverTradeFilter")
     w.note = text(window, "GameFontDisableSmall", "RIGHT")
     w.note:SetPoint("TOPRIGHT", window, "TOPRIGHT", -30, -12)
     w.close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
