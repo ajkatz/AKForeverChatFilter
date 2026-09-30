@@ -1,0 +1,252 @@
+-- The words. Every line of chat is scored by the words in it: what says "game business" counts up, what
+-- says "the world outside" counts down, and the sum decides (Rules.lua). The lists are plain data so
+-- that a wrong call is a one-line fix - and '/gtf allow <word>' / '/gtf block <word>' teach more without
+-- touching this file.
+--
+-- Rules of thumb for the lists:
+--   * a word that is BOTH stays out: "war" is a warrior, "gates" are AQ's, "if" is Ironforge and a
+--     conjunction, "ah" is the auction house and a sigh, "nuke" is what a mage does, "camp" is where a
+--     rare spawns and where history was made. A missing word costs a line nothing, a wrong word costs
+--     the wrong verdict;
+--   * nationalities and countries are the world outside, but only in passing (-1): "french guild
+--     recruiting" is guild business, "any russians here" is not;
+--   * everything is lower case; a phrase (with spaces) is matched as a phrase on the whole line.
+local _, ns = ...
+
+local Terms = {}
+ns.Terms = Terms
+
+Terms.LISTS = {
+    -- TRADE: the words that make a line trade, or a group forming, or a service offered
+    { weight = 2, label = "trade", words = {
+        "wts", "wtb", "wtt", "wttf", "sell", "selling", "sells", "sold", "buy", "buying", "trade", "trading",
+        "trader", "lf", "lfm", "lfg", "lfw", "lfe", "lft", "lfh", "lfdps", "lf1m", "lf2m", "lf3m", "lf4m",
+        "lfr", "pst", "cod", "obo", "ono", "offer", "offers", "offering", "bid", "bids", "bidding",
+        "gold", "silver", "copper", "tip", "tips", "tipping", "mats", "own mats", "your mats", "my mats",
+        "recruit", "recruits", "recruiting", "recruitment", "guild", "guilds", "boost", "boosting", "boosts",
+        "carry", "carries", "carried", "port", "ports", "portal", "portals", "summon", "summons", "summ",
+        "ench", "enchant", "enchants", "enchanter", "enchanting", "craft", "crafts", "crafting", "crafter",
+        "craftable", "price", "prices", "priced", "cheap", "cheapest", "cheaper", "auction", "auctions",
+        "auction house", "on ah", "in ah", "on the ah", "in the ah", "ah price", "ah prices", "than ah",
+        "buyout", "bo", "lowest", "highest", "paying", "pay", "pays", "sale", "sales", "in stock", "wanted",
+        "seeking", "hiring", "service", "services", "delivery", "deliver", "vendor", "vendors", "vendored",
+        "going for", "how much", "worth", "asking price", "any offers", "make an offer", "best offer",
+    } },
+    -- GAME: the vocabulary of the game itself
+    { weight = 1, label = "game", words = {
+        -- professions
+        "alchemy", "alchemist", "alch", "blacksmith", "blacksmithing", "smith", "smithing", "armorsmith",
+        "weaponsmith", "engineer", "engineering", "engi", "eng", "leatherworker", "leatherworking", "lw",
+        "tailor", "tailoring", "skinner", "skinning", "miner", "mining", "herbalist", "herbalism", "herb",
+        "herbs", "fishing", "fisherman", "cooking", "cook", "first aid", "recipe", "recipes", "pattern",
+        "patterns", "plans", "schematic", "schematics", "formula", "formulas", "profession", "professions",
+        "prof", "profs",
+        -- dungeons and raids
+        "rfc", "ragefire", "wc", "wailing caverns", "deadmines", "dead mines", "vc", "vancleef", "sfk",
+        "shadowfang", "bfd", "blackfathom", "stockade", "stockades", "gnomer", "gnomeregan", "rfk", "rfd",
+        "razorfen", "sm", "scarlet monastery", "monastery", "cath", "cathedral", "armory", "library",
+        "graveyard", "ulda", "uldaman", "zf", "zul'farrak", "zulfarrak", "mara", "maraudon", "sunken temple",
+        "brd", "blackrock", "lbrs", "ubrs", "brs", "scholo", "scholomance", "strat", "stratholme", "dire maul",
+        "dm east", "dm west", "dm north", "dm tribute", "tribute run", "mc", "molten core", "ony", "onyxia",
+        "bwl", "blackwing", "zg", "zul'gurub", "zulgurub", "aq", "aq20", "aq40", "naxx", "naxxramas",
+        "dungeon", "dungeons", "instance", "instances", "raid", "raids", "raiding", "raider", "raiders",
+        "run", "runs", "full clear", "clears", "attune", "attuned", "attunement", "key", "keys", "keyed",
+        -- zones and cities
+        "barrens", "durotar", "mulgore", "tirisfal", "silverpine", "hillsbrad", "ashenvale", "stonetalon",
+        "westfall", "elwynn", "dun morogh", "loch modan", "redridge", "duskwood", "wetlands", "darkshore",
+        "teldrassil", "stranglethorn", "stv", "desolace", "tanaris", "feralas", "hinterlands", "badlands",
+        "searing gorge", "burning steppes", "un'goro", "ungoro", "silithus", "winterspring", "plaguelands",
+        "epl", "wpl", "felwood", "azshara", "swamp of sorrows", "blasted lands", "arathi", "alterac",
+        "thousand needles", "dustwallow", "moonglade", "deadwind", "orgrimmar", "org", "thunder bluff", "tb",
+        "undercity", "uc", "stormwind", "sw", "ironforge", "darnassus", "darn", "gadgetzan", "gadget",
+        "booty bay", "bb", "ratchet", "everlook", "crossroads", "xr", "tarren mill", "tm", "southshore",
+        "astranaar", "taurajo", "brill", "goldshire", "kargath", "menethil", "theramore", "nethergarde",
+        "cenarion hold", "light's hope", "andorhal", "feathermoon", "nijel's point", "thelsamar", "auberdine",
+        "sepulcher", "hammerfall", "refuge pointe", "splintertree", "sun rock", "camp mojache", "freewind",
+        "shadowprey", "zoram", "kalimdor", "eastern kingdoms", "azeroth",
+        -- classes, specs and roles
+        "warrior", "warr", "mage", "mages", "priest", "priests", "rogue", "rogues", "druid", "druids",
+        "shaman", "shamans", "sham", "warlock", "warlocks", "lock", "locks", "paladin", "paladins", "pally",
+        "pala", "hunter", "hunters", "hunt", "tank", "tanks", "tanking", "healer", "healers", "heals", "heal",
+        "healing", "dps", "dpser", "dpsers", "ranged", "melee", "caster", "casters", "hybrid", "spec",
+        "specs", "respec", "resto", "feral", "prot", "fury", "arms", "shadow", "disc", "frost", "fire",
+        "arcane", "affliction", "demo", "destro", "enh", "enhance", "enhancement", "ele", "elemental",
+        "boomkin", "survival", "bm", "mm", "combat", "assassination", "ret", "retri", "hpally", "holy pally",
+        "holy priest", "holy spec",
+        -- groups, loot and play
+        "group", "grp", "party", "gm", "officer", "officers", "rep", "boss", "bosses", "wipe", "wiped",
+        "loot", "loots", "roll", "rolls", "rolled", "ninja", "ninjad", "reserved", "hr", "ms", "os", "greed",
+        "bind", "boe", "bop", "epic", "epics", "purple", "purples", "blues", "greens", "greys", "quest",
+        "quests", "questing", "escort", "turn in", "turnin", "level", "levels", "lvl", "lvls", "leveling",
+        "lvling", "lv", "xp", "exp", "alt", "alts", "main", "twink", "twinks", "pvp", "pve", "bg", "bgs",
+        "wsg", "ab", "av", "warsong", "arathi basin", "alterac valley", "honor", "rank", "ranks", "ranked",
+        "hk", "hks", "gank", "ganked", "ganking", "gankers", "ganker", "camped", "camping", "flight", "fp",
+        "flightpath", "flight path", "hearth", "hs", "hearthstone", "mount", "mounts", "rez", "res", "ress",
+        "resurrect", "buff", "buffs", "buffed", "fort", "fortitude", "motw", "mark of the wild", "intellect",
+        "int", "spirit", "water", "food", "conjure", "conjured", "stack", "stacks", "bag", "bags", "slot",
+        "slots", "bank", "whisper", "wisp", "wsp", "pm", "dm me", "whisper me", "w me", "invite", "inv",
+        "invites", "afk", "brb", "lag", "lagging", "latency", "server", "realm", "layer", "layers", "queue",
+        "logout", "relog", "reload", "addon", "addons", "macro", "macros", "keybind", "ui", "dc",
+        "disconnect", "disconnected", "patch", "hotfix", "nerf", "nerfed", "stealth", "sap", "sheep",
+        "polymorph", "fear", "cc", "kite", "kiting", "pull", "pulls", "pulled", "aggro", "threat", "taunt",
+        "dot", "dots", "hot", "hots", "crit", "crits", "proc", "procs", "mana", "rage", "combo", "cooldown",
+        "cooldowns", "cd", "cds", "gear", "geared", "gearing", "ilvl", "tier", "t1", "t2", "t3", "pre-bis",
+        "prebis", "bis", "spell", "spells", "ability", "talent", "talents", "trainer", "skill", "skills",
+        "skilled", "skill up", "skillup", "horde", "alliance", "ally", "orc", "orcs", "troll", "trolls",
+        "tauren", "undead", "forsaken", "human", "humans", "dwarf", "dwarves", "gnome", "gnomes", "night elf",
+        "nelf", "nelfs", "elf", "elves", "goblin", "goblins", "murloc", "murlocs", "kobold", "kobolds",
+        "gnoll", "gnolls", "harpy", "harpies", "centaur", "quilboar", "naga", "furbolg", "ogre", "ogres",
+        "dragon", "dragons", "whelp", "whelps", "elite", "elites", "rare", "rares", "spawn", "spawns",
+        "spawned", "respawn", "mob", "mobs", "npc", "npcs", "flightmaster", "innkeeper", "auctioneer",
+        "banker",
+        -- items and materials
+        "weapon", "weapons", "armor", "sword", "swords", "axe", "axes", "mace", "maces", "dagger", "daggers",
+        "staff", "staves", "bow", "bows", "wand", "wands", "shield", "shields", "cloak", "cloaks", "robe",
+        "robes", "chest", "chestpiece", "leggings", "legs", "pants", "boots", "gloves", "gauntlets", "belt",
+        "bracers", "bracer", "helm", "helmet", "hat", "shoulders", "shoulder", "ring", "rings", "trinket",
+        "trinkets", "neck", "necklace", "amulet", "off-hand", "offhand", "oh", "2h", "1h", "two-hand", "vest", "tunic", "jerkin",
+        "one-hand", "2hander", "1hander", "potion", "potions", "pot", "pots", "elixir", "elixirs", "flask",
+        "flasks", "scroll", "scrolls", "bandage", "bandages", "cloth", "linen", "wool", "silk", "mageweave",
+        "runecloth", "felcloth", "leather", "hide", "hides", "rugged", "ore", "ores", "bars", "tin", "bronze",
+        "iron", "steel", "mithril", "thorium", "truesilver", "arcanite", "dark iron", "ingot", "peacebloom",
+        "silverleaf", "earthroot", "mageroyal", "briarthorn", "stranglekelp", "bruiseweed", "kingsblood",
+        "liferoot", "fadeleaf", "goldthorn", "wintersbite", "firebloom", "purple lotus", "sungrass",
+        "blindweed", "ghost mushroom", "gromsblood", "golden sansam", "dreamfoil", "silversage",
+        "plaguebloom", "icecap", "black lotus", "lotus", "gem", "gems", "pearl", "pearls", "essence",
+        "essences", "dust", "shard", "shards", "crystal", "crystals", "cores", "orb", "orbs", "rune", "runes",
+        "oil", "oils", "poison", "poisons", "sharpening", "weightstone", "stone", "stones", "grinding",
+        "arrows", "bullets", "ammo", "quiver", "dye", "salt", "vial", "vials", "kit", "kits", "spices", "meat",
+        "fish", "egg", "eggs", "noggenfogger", "devilsaur", "wildvine", "elemental fire", "elemental water",
+        "elemental earth", "elemental air", "heart of fire", "globe of water", "core of earth",
+        "breath of wind", "blood of the mountain", "fire core", "sulfuras", "thunderfury", "ashkandi",
+        "quel'serrar", "windfury", "rockbiter", "flametongue", "frostbrand", "raptor", "wolf", "tiger", "kodo",
+        "ram", "horse", "mechanostrider", "nightsaber", "epic mount", "riding", "mounted",
+    } },
+    -- THE WORLD OUTSIDE, loud: politics, war, faith, the words no trade line needs
+    { weight = -3, label = "real-world", words = {
+        -- people
+        "trump", "donald trump", "biden", "joe biden", "obama", "clinton", "hillary", "kamala", "jd vance",
+        "pence", "desantis", "newsom", "aoc", "ocasio", "bernie", "sanders", "pelosi", "mcconnell",
+        "schumer", "musk", "elon", "bezos", "zuckerberg", "soros", "putin", "zelensky", "zelenskyy",
+        "netanyahu", "erdogan", "xi jinping", "jinping", "kim jong", "modi", "macron", "trudeau", "carney",
+        "starmer", "sunak", "boris johnson", "merkel", "scholz", "milei", "orban", "lula", "bolsonaro",
+        "maduro", "hitler", "stalin", "mao", "mussolini", "castro", "guevara", "bin laden", "saddam",
+        "gaddafi", "assad", "khamenei", "ayatollah", "epstein", "rfk jr", "tulsi", "hegseth", "rubio",
+        "rogan", "tucker carlson", "hannity", "maddow", "shapiro", "ben shapiro", "candace", "charlie kirk",
+        "george bush", "cheney", "reagan", "nixon", "jimmy carter", "kennedy", "jfk", "roosevelt",
+        "thatcher", "churchill", "truss", "corbyn", "farage", "le pen", "sarkozy", "hollande", "berlusconi",
+        "meloni", "gorbachev", "yeltsin", "lenin", "trotsky", "pol pot", "pinochet", "mandela", "gandhi",
+        "kissinger", "al gore", "romney", "mccain", "palin", "ted cruz", "hawley", "gaetz", "boebert",
+        "marjorie taylor greene", "fetterman", "buttigieg", "elizabeth warren", "bloomberg", "giuliani",
+        "bannon", "stephen miller", "kushner", "ivanka", "melania", "hunter biden", "michelle obama", "walz",
+        "tim walz", "whitmer", "pritzker", "hochul", "greg abbott", "youngkin", "noem", "ramaswamy", "vivek",
+        "nikki haley", "huckabee", "king charles", "prince harry", "meghan markle", "royal family",
+        -- parties, sides and labels
+        "republican", "republicans", "democrat", "democrats", "democratic party", "democracy", "gop", "dnc",
+        "rnc", "maga", "liberal", "liberals", "libs", "libtard", "libtards", "conservative", "conservatives",
+        "conservatard", "leftist", "leftists", "lefty", "leftie", "lefties", "rightwing", "right-wing",
+        "right wing", "leftwing", "left-wing", "left wing", "socialist", "socialists", "socialism",
+        "communist", "communists", "communism", "commie", "commies", "fascist", "fascists", "fascism", "nazi",
+        "nazis", "neo-nazi", "neonazi", "woke", "wokeness", "wokeism", "antifa", "blm", "marxist", "marxists",
+        "marxism", "capitalist", "capitalists", "capitalism", "anarchist", "anarchists", "libertarian",
+        "libertarians", "progressives", "zionist", "zionists", "zionism", "globalist", "globalists",
+        "deep state", "illuminati", "qanon", "alt-right", "alt right", "far-right", "far right", "far-left",
+        "far left", "radical left", "radical right", "feminist", "feminists", "feminism", "sjw", "sjws",
+        "incel", "incels", "redpill", "red pill", "redpilled", "blackpill", "boomers", "snowflake",
+        "snowflakes", "cancel culture", "virtue signal", "virtue signaling", "lgbt", "lgbtq",
+        -- the machinery
+        "election", "elections", "electoral", "ballot", "ballots", "voter", "voters", "president",
+        "presidential", "presidency", "senate", "senator", "senators", "congress", "congressman",
+        "congresswoman", "parliament", "governor", "prime minister", "supreme court", "scotus", "impeach",
+        "impeached", "impeachment", "tariff", "tariffs", "trade war", "immigrant", "immigrants",
+        "immigration", "migrant", "migrants", "deport", "deported", "deportation", "deportations",
+        "ice raids", "border wall", "abortion", "abortions", "pro-life", "pro-choice", "gun control",
+        "2nd amendment", "second amendment", "nra", "jan 6", "jan 6th", "january 6", "january 6th",
+        "insurrection", "riot", "riots", "rioters", "protest", "protests", "protesters", "protestors",
+        "lockdowns", "mandate", "mandates", "executive order", "white house", "the white house", "pentagon",
+        "cia", "fbi", "nsa", "kremlin", "politics", "political", "politician", "politicians", "government",
+        "governments", "regime", "dictator", "dictatorship", "propaganda", "conspiracy", "conspiracies",
+        "police", "cops", "military",
+        -- countries: a country named is a line gone, whatever else it says
+        "usa", "united states", "america", "canada", "mexico", "uk", "britain", "england",
+        "scotland", "ireland", "wales", "france", "germany", "spain", "italy", "portugal", "netherlands",
+        "belgium", "sweden", "norway", "denmark", "finland", "iceland", "greenland", "poland", "greece",
+        "turkey", "austria", "switzerland", "hungary", "czech", "czechia", "slovakia", "slovenia", "croatia",
+        "serbia", "bosnia", "romania", "bulgaria", "moldova", "belarus", "estonia", "latvia", "lithuania",
+        "luxembourg", "malta", "cyprus", "georgia", "armenia", "azerbaijan", "kazakhstan", "mongolia",
+        "brazil", "argentina", "chile", "peru", "bolivia", "ecuador", "colombia", "venezuela", "uruguay",
+        "paraguay", "cuba", "haiti", "jamaica", "panama", "costa rica", "guatemala", "honduras", "nicaragua",
+        "el salvador", "puerto rico", "dominican republic", "australia", "new zealand", "japan", "korea",
+        "south korea", "north korea", "india", "pakistan", "bangladesh", "sri lanka", "nepal", "vietnam",
+        "thailand", "philippines", "indonesia", "malaysia", "singapore", "myanmar", "cambodia", "africa",
+        "south africa", "nigeria", "kenya", "ethiopia", "egypt", "morocco", "algeria", "libya", "sudan",
+        "somalia", "saudi", "saudi arabia", "qatar", "dubai", "uae", "yemen", "jordan", "lebanon", "kuwait",
+        "bahrain", "oman", "europe", "asia",
+        -- wars and places in the news
+        "ukraine", "ukrainian", "ukrainians", "russia", "moscow", "israel", "israeli", "israelis", "gaza",
+        "palestine", "palestinian", "palestinians", "hamas", "hezbollah", "iran", "iranian", "iranians",
+        "tehran", "iraq", "syria", "afghanistan", "taliban", "isis", "al qaeda", "alqaeda", "china", "beijing",
+        "ccp", "taiwan", "hong kong", "pyongyang", "genocide", "apartheid", "terrorist", "terrorists",
+        "terrorism", "jihad", "jihadi", "war crimes", "holocaust", "ethnic cleansing", "shooting",
+        "mass shooting",
+        -- faith and race, the way they turn up in chat
+        "islam", "islamic", "muslim", "muslims", "christian", "christians", "christianity", "catholic",
+        "catholics", "jew", "jews", "jewish", "judaism", "atheist", "atheists", "religion", "religious",
+        "bible", "quran", "koran", "pope", "vatican", "mormon", "mormons", "evangelical", "evangelicals",
+        "racist", "racists", "racism", "sexist", "sexism", "misogynist", "misogyny", "transgender",
+        "transphobic", "homophobic", "homophobe", "white people", "black people", "white supremacy",
+        "supremacist", "supremacists", "slavery", "colonialism",
+        -- health, money and the rest of the outside
+        "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
+        "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
+        "inflation", "recession", "stock market", "wall street", "federal reserve", "irs", "taxes",
+        "taxpayer", "taxpayers", "welfare", "medicare", "medicaid", "obamacare", "healthcare", "bitcoin",
+        "btc", "crypto", "ethereum", "nft", "nfts", "dogecoin", "oil prices", "oil price", "gas prices",
+        "gas price", "price of oil", "price of gas",
+    } },
+    -- THE WORLD OUTSIDE, in passing: a country, a language, a screen - a line about the game may mention them
+    { weight = -1, label = "real-world", words = {
+        "american", "americans", "british", "english", "scottish", "irish", "welsh", "french", "german",
+        "germans", "spanish", "italian", "italians", "portuguese", "dutch", "belgian", "swedish", "swede",
+        "swedes", "norwegian", "danish", "finnish", "polish", "russian", "russians", "greek", "turkish",
+        "brazilian", "brazilians", "mexican", "mexicans", "canadian", "canadians", "australian", "aussie",
+        "aussies", "kiwi", "kiwis", "japanese", "korean", "koreans", "chinese", "indian", "indians",
+        "pakistani", "african", "africans", "european", "europeans", "asian", "asians", "arab", "arabs",
+        "arabic", "latino", "latinos", "hispanic", "hispanics", "texas", "texan", "california", "florida",
+        "new york", "chicago", "london", "paris", "berlin", "toronto", "sydney",
+        "cnn", "fox news", "foxnews", "msnbc", "nbc", "cbs", "bbc", "nytimes", "new york times",
+        "washington post", "breitbart", "infowars", "twitter", "tweet", "tweets", "tiktok", "instagram",
+        "facebook", "reddit", "youtube", "netflix", "spotify", "podcast", "podcasts", "nfl", "nba", "mlb",
+        "nhl", "super bowl", "superbowl", "world cup", "olympics", "ufc", "wwe", "patriots", "taylor swift",
+        "kardashian", "beyonce", "kanye", "eminem", "hollywood", "oscars", "grammys", "movie", "movies",
+        "voted", "weather", "snowstorm", "hurricane", "earthquake", "wildfire", "wildfires", "flood",
+        "floods", "economy", "my boss", "boss at work", "landlord", "rent", "mortgage", "tuition", "college",
+        "university", "school", "homework", "exam", "exams", "wife", "husband", "girlfriend", "boyfriend",
+        "kids", "baby", "pregnant", "wedding", "divorce", "church", "prayer", "pray", "god bless", "amen",
+        "drugs", "cocaine", "marijuana", "meth", "gay",
+    } },
+}
+
+-- Things that are not words: a hyperlink is the strongest sign of all, a sum of gold nearly as strong,
+-- a web address the opposite. Patterns in Lua's own dialect, run on the lower-cased line.
+Terms.PATTERNS = {
+    { weight = 3, label = "link", pattern = "|h%[[^%]]+%]|h" },             -- an item, spell, quest, ... link
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*g%f[%W]" },         -- 50g, 5 g
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*k%f[%W]" },         -- 5k
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*gold%f[%W]" },      -- 50 gold
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*silver%f[%W]" },
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*s%f[%W]" },         -- 50s
+    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*c%f[%W]" },         -- 50c
+    { weight = 1, label = "count", pattern = "%f[%w]x%d+%f[%W]" },           -- x20
+    { weight = 1, label = "count", pattern = "%f[%w]%d+x%f[%W]" },           -- 20x
+    { weight = 1, label = "count", pattern = "%f[%w]%d+/%d+%f[%W]" },        -- 3/5 (a group forming)
+    { weight = 1, label = "level", pattern = "%f[%w]lvl?%s*%d+%f[%W]" },     -- lvl 40, lv40
+    { weight = 1, label = "level", pattern = "%f[%w]%d+%s*%-%s*%d+%f[%W]" }, -- 40-50
+    { weight = -1, label = "web", pattern = "https?://" },
+    { weight = -1, label = "web", pattern = "%f[%w]www%." },
+    { weight = -1, label = "web", pattern = "%.com%f[%W]" },
+    { weight = -1, label = "web", pattern = "%.gg%f[%W]" },
+    { weight = -1, label = "web", pattern = "%.tv%f[%W]" },
+    { weight = -1, label = "web", pattern = "%.net%f[%W]" },
+    { weight = -1, label = "web", pattern = "%.org%f[%W]" },
+}
