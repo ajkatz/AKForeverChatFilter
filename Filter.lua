@@ -13,7 +13,7 @@ local _, ns = ...
 local Filter = {}
 ns.Filter = Filter
 
-local LOG_MAX = 400     -- lines kept in the saved file, newest last
+local LOG_MAX = 800     -- lines kept in the saved file, newest last (a session of Trade runs to several hundred)
 local RECENT_MAX = 80   -- line ids whose verdict is remembered
 
 -- Blizzard's own numbers for the city channels (zoneChannelID); the name is the fallback

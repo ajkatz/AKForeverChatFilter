@@ -41,6 +41,7 @@ local REASON_TERMS = 4      -- how many of the words are named in the reason
 local THREAD_SECONDS = 180  -- how long a real-world talker's chatter keeps going after one line went
 local THREAD_ESCAPE = 2     -- ... unless a line scores this much on the game's side: clearly game business
 local SPEAKER_SECONDS = 180 -- how long a name stays "somebody who just spoke"
+local GOES_ON_SECONDS = 120 -- chatter this soon after the sender's own game line goes on from it
 local QUESTION_SECONDS = 60 -- chatter this soon after a game question is taken for an answer
 local ANSWER_SECONDS = 20   -- ... and each answer keeps the window open this much longer
 local ANSWERS_MAX = 4       -- ... for at most this many answers (the first real session: four real ones, then jokes)
@@ -135,12 +136,23 @@ function Rules.Score(text)
         end
         kinds[kind] = (kinds[kind] or 0) + weight
     end
-    -- "US" the country is a capital pair; "us" the pronoun is not a word to block - and in a line
-    -- SHOUTED IN CAPITALS the pair says nothing
-    if string.find(text, "%l") and (string.find(text, "%f[%w]US%f[%W]") or string.find(text, "%f[%w]U%.S%.")) then
-        hit("US", -LOUD, "world")
+    -- "US" the country and "AH" the auction house are capital pairs; "us" and "ah" are not words to go
+    -- by - and in a line SHOUTED IN CAPITALS the pairs say nothing
+    if string.find(text, "%l") then
+        if string.find(text, "%f[%w]US%f[%W]") or string.find(text, "%f[%w]U%.S%.") then
+            hit("US", -LOUD, "world")
+        end
+        if string.find(text, "%f[%w]AH%f[%W]") then
+            hit("AH", 2, "trade")
+        end
     end
     local line = Rules.Normalize(text)
+    -- what is said of the channel itself is not said of trade
+    for _, neutral in ipairs(ns.Terms.NEUTRAL or {}) do
+        line = string.gsub(" " .. line .. " ", " " .. neutral .. " ", " ")
+        line = string.gsub(line, "^%s+", "")
+        line = string.gsub(line, "%s+$", "")
+    end
     local lower = string.lower(text)
     local seen = {}
     for _, word in ipairs(words(line)) do
@@ -190,11 +202,12 @@ end
 -- The conversation
 ------------------------------------------------------------------------
 local threads = {}   -- sender -> the time their line went for the world outside
-local speakers = {}  -- first name (lower case) -> { sender, at, side }
+local speakers = {}  -- first name -> { sender, at, side }
+local lastSaid = {}  -- sender -> the time of their last line about the game
 local question = nil -- the last game question: { sender, at, until_, answers }
 
 function Rules.ResetThreads()
-    threads, speakers, question = {}, {}, nil
+    threads, speakers, lastSaid, question = {}, {}, {}, nil
 end
 
 local QUESTION_WORDS = { anyone = true, anybody = true, any = true, does = true, ["do"] = true, ["is"] = true, are = true,
@@ -220,11 +233,13 @@ function Rules.StripLinks(text)
     return line
 end
 
--- a question that seeks an answer: a question word up front, and a word of the game that is not just a
--- link's name ("did someone say [Thunderfury]?" and "what would you do for a [Thunderfury]" are jokes)
+-- a question that seeks an answer: a question word up front or a question mark at the end, and a word of
+-- the game that is not just a link's name ("did someone say [Thunderfury]?" and "what would you do for a
+-- [Thunderfury]" are jokes)
 function Rules.SeeksAnswer(text)
     local first = string.match(Rules.Normalize(text), "^(%S+)")
-    if first == nil or QUESTION_WORDS[first] ~= true then
+    local shaped = (first ~= nil and QUESTION_WORDS[first] == true) or string.find(text, "%?%s*$") ~= nil
+    if not shaped then
         return false
     end
     return Rules.Score(Rules.StripLinks(text)).game > 0
@@ -321,10 +336,13 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
             kind, reason = "questions", "an answer after " .. question.sender .. "'s question"
             question.answers = question.answers + 1
             question.until_ = math.max(question.until_, now + ANSWER_SECONDS)
+        elseif answers ~= false and sender and now and lastSaid[sender] and now - lastSaid[sender] <= GOES_ON_SECONDS then
+            -- a discussion goes on: somebody whose own last line was about the game is still talking about it
+            kind, reason = "talk", "goes on from their own game line"
         end
     end
-    -- the thread rule: a real-world talker's chatter goes on for a while
-    if sticky ~= false and sender and now and kind ~= "world" and scored.game < THREAD_ESCAPE then
+    -- the thread rule: a real-world talker's CHATTER goes on for a while; a line with a word of the game is its own
+    if sticky ~= false and sender and now and kind ~= "world" and scored.game == 0 then
         local since = threads[sender]
         if since and now - since <= THREAD_SECONDS then
             kind, reason = "world", "goes on from a real-world line (" .. reason .. ")"
@@ -340,9 +358,13 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
                 threads[sender] = nil
             end
             remember(sender, now, "game")
-            -- a question about the game that seeks an answer opens the window - a group forming or a service
-            -- wanted gets its answers by whisper, and an answer never opens a window of its own
-            if kind == "questions" and Rules.SeeksAnswer(text) then
+            if kind ~= "chatter" then
+                lastSaid[sender] = now -- a word of the game, or an answer in a discussion: part of it either way
+            end
+            -- a question about the game or about trade that seeks an answer opens the window ("is the AH
+            -- linked?" gets its answers in chat; a group forming gets them by whisper), and an answer never
+            -- opens a window of its own
+            if (kind == "questions" or kind == "trade") and Rules.SeeksAnswer(text) then
                 question = { sender = sender, at = now, until_ = now + QUESTION_SECONDS, answers = 0 }
             end
         end

@@ -53,7 +53,8 @@ Terms.LISTS = {
     } },
     { weight = 1, kind = "guilds", words = {
         "gm", "officer", "officers", "discord", "members", "member", "community", "friendly", "active",
-        "semi-hardcore", "all classes", "all levels",
+        "semi-hardcore", "all classes", "all levels", "charter", "charters", "sigs", "sig", "signature",
+        "signatures", "sign my", "guild cigs",
     } },
     -- TALK: the vocabulary of the game itself
     { weight = 1, kind = "talk", words = {
@@ -96,7 +97,7 @@ Terms.LISTS = {
         "boomkin", "survival", "bm", "mm", "combat", "assassination", "ret", "retri", "hpally", "holy pally",
         "holy priest", "holy spec",
         -- loot and play
-        "rep", "boss", "bosses", "wipe", "wiped",
+        "rep", "boss", "bosses", "wipe", "wiped", "faction", "factions", "cross-faction", "mailbox", "mail",
         "loot", "loots", "roll", "rolls", "rolled", "ninja", "ninjad", "reserved", "hr", "ms", "os", "greed",
         "bind", "boe", "bop", "epic", "epics", "purple", "purples", "blues", "greens", "greys", "quest",
         "quests", "questing", "escort", "turn in", "turnin", "level", "levels", "lvl", "lvls", "leveling",
@@ -163,6 +164,9 @@ Terms.LISTS = {
         "bannon", "stephen miller", "kushner", "ivanka", "melania", "hunter biden", "michelle obama", "walz",
         "tim walz", "whitmer", "pritzker", "hochul", "greg abbott", "youngkin", "noem", "ramaswamy", "vivek",
         "nikki haley", "huckabee", "king charles", "prince harry", "meghan markle", "royal family",
+        "alex jones", "jordan peterson", "andrew tate", "steven crowder", "crowder", "tim pool", "nick fuentes",
+        "fuentes", "greta thunberg", "bill gates", "george floyd", "rittenhouse", "mangione", "diddy",
+        "weinstein", "oprah", "kim jong un",
         -- parties, sides and labels
         "republican", "republicans", "democrat", "democrats", "democratic party", "democracy", "gop", "dnc",
         "rnc", "maga", "liberal", "liberals", "libs", "libtard", "libtards", "conservative", "conservatives",
@@ -218,6 +222,8 @@ Terms.LISTS = {
         "racist", "racists", "racism", "sexist", "sexism", "misogynist", "misogyny", "transgender",
         "transphobic", "homophobic", "homophobe", "white people", "black people", "white supremacy",
         "supremacist", "supremacists", "slavery", "colonialism",
+        -- a crime story is the world's too
+        "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedo", "rapist", "molested",
         -- health, money and the rest of the outside
         "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
         "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
@@ -258,6 +264,10 @@ Terms.LISTS = {
         "hospital", "nurse", "surgery", "dentist", "flu", "fever", "headache", "diet", "gym", "workout",
     } },
 }
+
+-- Said of the channel itself, not of trade: taken out of the line before its words are counted, so that
+-- "somebody spergin in trade chat" is not trade.
+Terms.NEUTRAL = { "trade chat", "trade channel", "general chat", "in trade", "on trade" }
 
 -- Things that are not words: a hyperlink is the strongest sign of all, a sum of gold nearly as strong,
 -- a web address the opposite. Patterns in Lua's own dialect, run on the lower-cased line.

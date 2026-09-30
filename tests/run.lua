@@ -98,6 +98,13 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     -- the world outweighs the game, but not a trade line with a link and a price
     equal(verdict("biden is a warlock lol").keep, false, "a loud word of the world outweighs a word of the game")
     equal(verdict("wts " .. SWORD .. " 50g made in china").keep, true)
+    equal(verdict("alex jones was right about everything").kind, "world", "heard in Trade, 2026-09-30")
+    equal(verdict("i heard she strangled her kids with a " .. SWORD).keep, false, "a crime story is the world's, link or not")
+    equal(verdict("no one changes how they think through someone spergin in trade chat").kind, "chatter", "'trade chat' is the channel, not trade")
+    equal(verdict("wts boots, whisper me in trade chat").kind, "trade", "but a trade line is still trade")
+    equal(verdict("damn AH is fucked, bronze is the same price as tin").kind, "trade", "AH in capitals is the auction house")
+    equal(verdict("ah ok thanks").kind, "chatter", "'ah' in lower case is a sigh")
+    equal(verdict("need 9 more guild sigs").kind, "guilds", "signatures are guild business")
     equal(verdict("trade war is killing the economy").keep, false, "'trade war' is a phrase of the world, whatever 'trade' is")
     equal(verdict("Trump's a joke").reason, "real-world talk: trump", "a possessive is the same word")
     equal(verdict("the alt-right is at it again").keep, false, "a hyphen is a space")
@@ -142,6 +149,9 @@ scenario("a thread: after a real-world line the same sender's chatter goes too, 
     equal(Rules.Verdict("lol no way", "chat", "Alice Aly", now + 30, true).keep, true, "somebody else's chatter is not")
     v = Rules.Verdict("Bob you are so right", "chat", "Carl Carlson", now + 40, true)
     equal(v.keep, false, "... unless it names him"); check(v.reason:find("^a reply to Bob Bobson, who was talking about the world outside"), v.reason)
+    v = Rules.Verdict("then why do i get stormwind mail", "chat", "Bob Bobson", now + 50, true)
+    equal(v.keep, true, "a line with a word of the game is its own, thread or no thread"); equal(v.kind, "talk")
+    equal(Rules.Verdict("trump 2028", "chat", "Bob Bobson", now + 55, true).keep, false)
     equal(Rules.Verdict("wts " .. SWORD, "chat", "Bob Bobson", now + 60, true).keep, true, "clearly game business escapes the thread")
     equal(Rules.Verdict("lol no way", "chat", "Bob Bobson", now + 90, true).keep, true, "and ends it")
     equal(Rules.Verdict("trump 2028", "chat", "Bob Bobson", now + 100, true).keep, false)
@@ -170,10 +180,10 @@ scenario("a conversation about the game: the answers to a game question count as
     equal(v.keep, true); equal(v.reason, "a reply to Holly Boy", "named, whatever the timing")
     -- the window: a minute, each answer buying half a minute more, six answers at most
     equal(verdict("lol", "Someone Else", 58).keep, true, "the window is still open: a minute")
-    equal(verdict("ok", "Someone Else", 58 + 21).keep, false, "each answer buys twenty seconds, no more: closed now")
+    equal(verdict("ok", "Another One", 58 + 21).keep, false, "each answer buys twenty seconds, no more: closed now (for somebody who said nothing before)")
     equal(verdict("Does anyone want to do Wailing Caverns?", "Cbiscuit Lancer", 95).kind, "groups")
     equal(verdict("RIP Man City hahaha", "Maelor Cadarn", 97).keep, false, "a group forming gets its answers by whisper: no window")
-    equal(verdict("holly which one", "Inyanis Ninyomae", 100).keep, false, "a name is written as a name: Forever's first names are common words")
+    equal(verdict("holly which one", "Stranger Sam", 100).keep, false, "a name is written as a name: Forever's first names are common words")
     -- an answer that ends in a question mark opens no window of its own; a joke question opens none at all
     equal(verdict("where is the wc entrance", "Asker Askerson", 120).kind, "questions")
     equal(verdict("?", "Puzzled Pete", 170).keep, true, "an answer, of sorts")
@@ -197,6 +207,19 @@ scenario("a conversation about the game: the answers to a game question count as
     -- a name shorter than three letters is no name to go by
     equal(verdict("wts " .. SWORD, "Al Alson", 600).kind, "trade")
     equal(verdict("Al is here", "Dan Danson", 601).keep, false)
+    -- a discussion goes on: chatter from somebody whose own last line was about the game (the AH-linking
+    -- discussion of 2026-09-30: "correct, it is not", "they are connected", "back in the very old days...")
+    v = verdict("Just noticed, the auction house doesn't appear to be linked between ally and horde?", "Asker Askerson", 700)
+    equal(v.kind, "trade", "'auction house' makes it trade - and a question mark at the end makes it seek an answer")
+    equal(verdict("correct, it is not", "Helper Hal", 705).reason, "an answer after Asker Askerson's question")
+    equal(verdict("then why do i get stormwind mail", "Asker Askerson", 740).kind, "talk")
+    v = verdict("because it never has and never will", "Helper Hal", 765)
+    equal(v.keep, true); equal(v.kind, "talk"); equal(v.reason, "goes on from their own game line", "Hal answered a minute ago: part of the discussion")
+    equal(verdict("back in the very old days, cities had their own individual auction houses, it is connected now", "Helper Hal", 800).kind, "trade", "an auction house in it: trade, and kept either way")
+    equal(verdict("thank the stars!", "Asker Askerson", 805).keep, true, "the asker goes on too")
+    equal(verdict("lol", "Bystander Bill", 806).keep, false, "somebody who said nothing about the game does not")
+    equal(verdict("what da hell", "Helper Hal", 800 + 121).keep, false, "two minutes on, it is chatter again")
+    equal(Rules.Verdict("what da hell", "game", "Helper Hal", now + 810, true, false).keep, false, "answers off: chatter is chatter")
     -- the same through the filter, with the real settings
     Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
     equal(Mock.chat({ text = "south of the crossroads, in the mountain", sender = "Ben Benson" }), true, "kept by its words")
@@ -491,17 +514,17 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
     walk(AKForeverTradeFilterDB, "AKForeverTradeFilterDB")
 end)
 
-scenario("the log is a ring: four hundred lines at most, and the saved state comes back", function()
+scenario("the log is a ring: eight hundred lines at most, and the saved state comes back", function()
     local ns = start()
-    for index = 1, 410 do
+    for index = 1, 810 do
         Mock.chat({ text = "trump " .. index, sender = "Bob" })
     end
-    equal(#ns.db.log, 400)
+    equal(#ns.db.log, 800)
     equal(ns.db.log[1].text, "trump 11", "the oldest went")
-    equal(ns.db.log[400].id, 410, "numbers keep counting")
+    equal(ns.db.log[800].id, 810, "numbers keep counting")
     local db = AKForeverTradeFilterDB
     ns = start({ db = db })
-    equal(#ns.db.log, 400, "back next session")
+    equal(#ns.db.log, 800, "back next session")
     equal(ns.savedStateSource, "client")
 end)
 

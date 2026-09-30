@@ -31,8 +31,10 @@ The world outside never stays. Which of the others do is a setting per kind:
 **A conversation about the game.** The answer to a game question rarely has a word of the game in it
 (`yes tomorrow`). So chatter within a minute of a game question is taken for an answer - each answer keeps
 the window open twenty seconds longer, four answers at most - and so is a line naming somebody who spoke
-about the game in the last three minutes (`which one Holly`). Both count as questions. `/gtf answers off`
-turns that off, and a line counts by its own words only. Sarcasm is beyond it.
+about the game in the last three minutes (`which one Holly`). Both count as questions. And a discussion
+goes on: chatter from somebody whose own last line, within two minutes, was about the game is game talk
+(`correct, it is not`, `they are connected`). `/gtf answers off` turns all of that off, and a line counts by
+its own words only. Sarcasm is beyond it.
 
 A country named is a line gone (`canada`, `israel`, `the US` - in capitals; `us` the pronoun is not a
 country), and so is any politician past or present. A nationality or a language only counts in passing:
@@ -60,7 +62,7 @@ addons (a secret value) goes through untouched.
 | `/gtf stats` | this session's count: seen, hidden, kept |
 | `/gtf diag` | a report into the settings file, then `/reload`: options, counts, the last lines with their verdicts, your training answers, every error |
 
-Everything the filter decides on is kept in the settings file (the last 400 lines with verdicts), and so are
+Everything the filter decides on is kept in the settings file (the last 800 lines with verdicts), and so are
 your training answers and flags. That file is what the next round of tuning is made from: what got through
 that should not have, what went that should have stayed, and the words that decided it.
 
