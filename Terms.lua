@@ -225,6 +225,9 @@ Terms.LISTS = {
         "taxpayer", "taxpayers", "welfare", "medicare", "medicaid", "obamacare", "healthcare", "bitcoin",
         "btc", "crypto", "ethereum", "nft", "nfts", "dogecoin", "oil prices", "oil price", "gas prices",
         "gas price", "price of oil", "price of gas",
+        -- the game's words in the world's phrases: a tank that holds gas, an oil that gets changed
+        "gas tank", "fish tank", "think tank", "tank top", "septic tank", "gas station", "oil change",
+        "car wash", "water heater", "hot water tank",
     } },
     -- THE WORLD OUTSIDE, in passing: a nationality, a language, a screen - a line about the game may mention them
     { weight = -1, kind = "world", words = {
@@ -246,6 +249,13 @@ Terms.LISTS = {
         "university", "school", "homework", "exam", "exams", "wife", "husband", "girlfriend", "boyfriend",
         "kid", "kids", "baby", "pregnant", "wedding", "divorce", "church", "prayer", "pray", "god bless", "amen",
         "drugs", "cocaine", "marijuana", "meth", "gay",
+        -- the life outside, in passing: the car, the kitchen, the body
+        "gas", "gasoline", "petrol", "fuel", "car", "cars", "truck", "trucks", "traffic", "commute",
+        "commuting", "highway", "freeway", "driving", "drove", "parking", "tires", "tyres", "mechanic",
+        "garage", "dealership", "insurance", "grocery", "groceries", "walmart", "costco", "amazon", "uber",
+        "doordash", "pizza", "burger", "burgers", "mcdonalds", "taco bell", "starbucks", "coffee", "lunch",
+        "dinner", "breakfast", "bed", "bedtime", "shower", "laundry", "dishes", "vacuum", "lawn", "mowing",
+        "hospital", "nurse", "surgery", "dentist", "flu", "fever", "headache", "diet", "gym", "workout",
     } },
 }
 

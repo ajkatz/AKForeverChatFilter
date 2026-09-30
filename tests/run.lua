@@ -117,6 +117,12 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("what did obama ever do").keep, false, "a former president is an easy one")
     equal(verdict("reagan would have hated this").keep, false)
     equal(verdict("nice weather today", "chat").keep, false, "in passing is enough with nothing on the game's side")
+    -- a tank that holds gas (heard in Trade, 2026-09-30)
+    equal(verdict("my gas tank is empty").keep, false, "a tank that holds gas is the world's")
+    check(verdict("my gas tank is empty").reason:find("gas tank", 1, true), verdict("my gas tank is empty").reason)
+    equal(verdict("need a tank for brd").kind, "groups")
+    equal(verdict("fish tank cleaning day").keep, false)
+    equal(verdict("raid this weekend?").keep, true, "the weekend is when raids happen: not a word of the world")
     equal(verdict("gg everyone", "chat").keep, true)
 
     -- what '/gtf test' prints
