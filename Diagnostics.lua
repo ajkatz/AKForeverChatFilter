@@ -73,6 +73,8 @@ function Diagnostics:Collect()
         terms = { builtIn = termCount, patterns = #ns.Terms.PATTERNS, taught = taught, words = db.words },
         trainer = ns.Trainer:Describe(),
         trainStats = db.trainStats,
+        trainHistory = db.trainHistory,
+        stamp = ns.Terms.Stamp(),
         log = tail(db.log or {}, LOG_LINES),
         labels = db.labels,
         errors = {},

@@ -108,7 +108,9 @@ Terms.LISTS = {
         "resurrect", "buff", "buffs", "buffed", "fort", "fortitude", "motw", "mark of the wild", "intellect",
         "int", "spirit", "water", "food", "conjure", "conjured", "stack", "stacks", "bag", "bags", "slot",
         "slots", "bank", "whisper", "wisp", "wsp", "pm", "dm me", "whisper me", "w me", "afk", "brb", "lag",
-        "lagging", "latency", "server", "realm", "layer", "layers", "queue",
+        "lagging", "laggy", "latency", "stutter", "stuttering", "fps", "frames", "frame rate", "server", "servers",
+        "realm", "realms", "layer", "layers", "queue", "queues", "login", "log in", "loggin", "logging", "logged",
+        "fresh", "fresh start", "fresh server", "fresh realm", "turn it in", "hand it in", "hand in",
         "logout", "relog", "reload", "addon", "addons", "macro", "macros", "keybind", "ui", "dc",
         "disconnect", "disconnected", "patch", "hotfix", "nerf", "nerfed", "stealth", "sap", "sheep",
         "polymorph", "fear", "cc", "kite", "kiting", "pull", "pulls", "pulled", "aggro", "threat", "taunt",
@@ -224,6 +226,10 @@ Terms.LISTS = {
         "supremacist", "supremacists", "slavery", "colonialism",
         -- a crime story is the world's too
         "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedo", "rapist", "molested",
+        -- the sexual and the political slang of this chat (from the training answers, 2026-09-30)
+        "trans", "dick", "cock", "pussy", "porn", "nudes", "onlyfans", "horny", "chud", "chuds", "milady",
+        "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
+        "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock",
         -- health, money and the rest of the outside
         "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
         "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
@@ -262,6 +268,9 @@ Terms.LISTS = {
         "doordash", "pizza", "burger", "burgers", "mcdonalds", "taco bell", "starbucks", "coffee", "lunch",
         "dinner", "breakfast", "bed", "bedtime", "shower", "laundry", "dishes", "vacuum", "lawn", "mowing",
         "hospital", "nurse", "surgery", "dentist", "flu", "fever", "headache", "diet", "gym", "workout",
+        -- the economy and the wires, in passing
+        "debt", "trillion", "billion", "dollar", "dollars", "internet", "spectrum", "isp", "wifi", "router",
+        "queer", "baddie", "straight guys", "boomer", "zoomer", "zoomers",
     } },
 }
 
@@ -293,3 +302,27 @@ Terms.PATTERNS = {
     { weight = -1, kind = "world", pattern = "%.net%f[%W]" },
     { weight = -1, kind = "world", pattern = "%.org%f[%W]" },
 }
+
+-- A number that changes whenever the lists change: the training tally is kept per stamp, so that "we
+-- agreed on N of M" means since the last tuning, not since the beginning of time.
+function Terms.Stamp()
+    local sum = 7
+    local function add(text)
+        for index = 1, #text do
+            sum = (sum * 31 + string.byte(text, index)) % 2147483647
+        end
+    end
+    for _, list in ipairs(Terms.LISTS) do
+        add(tostring(list.weight) .. tostring(list.kind))
+        for _, word in ipairs(list.words) do
+            add(word)
+        end
+    end
+    for _, entry in ipairs(Terms.PATTERNS) do
+        add(tostring(entry.weight) .. tostring(entry.kind) .. entry.pattern)
+    end
+    for _, neutral in ipairs(Terms.NEUTRAL or {}) do
+        add(neutral)
+    end
+    return sum
+end

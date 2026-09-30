@@ -11,8 +11,9 @@
 --     talk       anything else about the game                         (gnome is fun, server just died)
 --     chatter    nothing of the game in it                            (lol, thanks man)
 --     world      the world outside                                    (a politician, a country, a war, a faith)
--- The world outside wins whenever its loud words outweigh the game's: "biden is a warlock" goes, "wts
--- [Sulfuras] 50g made in china" stays. Then trade, groups and guilds are told apart by which of them
+-- A loud word of the world outside - a politician, a country, a war, a faith - is a hard pass whatever
+-- else the line says: "biden is a warlock" goes, and so does "wts [Sulfuras] 50g made in china" (a country
+-- named is a line gone, the user's own rule). Then trade, groups and guilds are told apart by which of them
 -- the words favour (a tie goes to guilds, then groups); a line with only words of the game is talk, or a
 -- question if it looks like one; a line with nothing is chatter.
 --
@@ -42,6 +43,7 @@ local THREAD_SECONDS = 180  -- how long a real-world talker's chatter keeps goin
 local THREAD_ESCAPE = 2     -- ... unless a line scores this much on the game's side: clearly game business
 local SPEAKER_SECONDS = 180 -- how long a name stays "somebody who just spoke"
 local GOES_ON_SECONDS = 120 -- chatter this soon after the sender's own game line goes on from it
+local GOES_ON_WORDS = 10    -- ... if it is short: a reply, not a speech
 local QUESTION_SECONDS = 60 -- chatter this soon after a game question is taken for an answer
 local ANSWER_SECONDS = 20   -- ... and each answer keeps the window open this much longer
 local ANSWERS_MAX = 4       -- ... for at most this many answers (the first real session: four real ones, then jokes)
@@ -312,7 +314,7 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     local score = scored.score
     local loud = scored.real <= -LOUD
     local kind, reason, sure = nil, nil, #scored.hits > 0
-    if loud and score <= 0 then
+    if loud then
         kind, reason = "world", "real-world talk: " .. named(scored.hits, -1)
     elseif score < 0 then
         kind, reason = "world", "the world outside: " .. named(scored.hits, -1)
@@ -336,8 +338,10 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
             kind, reason = "questions", "an answer after " .. question.sender .. "'s question"
             question.answers = question.answers + 1
             question.until_ = math.max(question.until_, now + ANSWER_SECONDS)
-        elseif answers ~= false and sender and now and lastSaid[sender] and now - lastSaid[sender] <= GOES_ON_SECONDS then
-            -- a discussion goes on: somebody whose own last line was about the game is still talking about it
+        elseif answers ~= false and sender and now and lastSaid[sender] and now - lastSaid[sender] <= GOES_ON_SECONDS
+            and wordCount(Rules.Normalize(text)) <= GOES_ON_WORDS then
+            -- a discussion goes on: somebody whose own last line was about the game is still talking about
+            -- it - in a line the length of a reply, not a speech
             kind, reason = "talk", "goes on from their own game line"
         end
     end

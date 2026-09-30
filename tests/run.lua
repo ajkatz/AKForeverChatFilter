@@ -97,8 +97,13 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
 
     -- the world outweighs the game, but not a trade line with a link and a price
     equal(verdict("biden is a warlock lol").keep, false, "a loud word of the world outweighs a word of the game")
-    equal(verdict("wts " .. SWORD .. " 50g made in china").keep, true)
+    equal(verdict("wts " .. SWORD .. " 50g made in china").keep, false, "a country named is a line gone, trade or not: the user's rule")
+    equal(verdict("Trump offering $5k to voters, imagine how much gold that can get YOU").kind, "world", "a politician named is a line gone, gold or not")
     equal(verdict("alex jones was right about everything").kind, "world", "heard in Trade, 2026-09-30")
+    equal(verdict("when is FRESH?").kind, "questions", "a fresh realm is the game's")
+    equal(verdict("anyone else super laggy first time loggin in this week").kind, "questions")
+    equal(verdict("+2 trillion debt, WINNING").keep, false)
+    equal(verdict("LF bottom/twink/trans/ in nc pm me").keep, false, "the slang of this chat")
     equal(verdict("i heard she strangled her kids with a " .. SWORD).keep, false, "a crime story is the world's, link or not")
     equal(verdict("no one changes how they think through someone spergin in trade chat").kind, "chatter", "'trade chat' is the channel, not trade")
     equal(verdict("wts boots, whisper me in trade chat").kind, "trade", "but a trade line is still trade")
@@ -217,6 +222,8 @@ scenario("a conversation about the game: the answers to a game question count as
     equal(v.keep, true); equal(v.kind, "talk"); equal(v.reason, "goes on from their own game line", "Hal answered a minute ago: part of the discussion")
     equal(verdict("back in the very old days, cities had their own individual auction houses, it is connected now", "Helper Hal", 800).kind, "trade", "an auction house in it: trade, and kept either way")
     equal(verdict("thank the stars!", "Asker Askerson", 805).keep, true, "the asker goes on too")
+    equal(verdict("outrage man, anger is the only language they know so it just oozes out of every one of them", "Asker Askerson", 810).keep, false,
+        "a speech is not a reply: eleven words or more stand on their own")
     equal(verdict("lol", "Bystander Bill", 806).keep, false, "somebody who said nothing about the game does not")
     equal(verdict("what da hell", "Helper Hal", 800 + 121).keep, false, "two minutes on, it is chatter again")
     equal(Rules.Verdict("what da hell", "game", "Helper Hal", now + 810, true, false).keep, false, "answers off: chatter is chatter")
@@ -408,6 +415,7 @@ scenario("training: every line is put to you first, then the filter's call comes
     check(w.feedback:GetText():find("Not what the filter did", 1, true) and w.feedback:GetText():find("hid it", 1, true), w.feedback:GetText())
     equal(ns.db.labels[2].agree, false)
     check(w.tally:GetText():find("1 of 2", 1, true), w.tally:GetText())
+    equal(ns.db.trainStats.stamp, ns.Terms.Stamp(), "the tally belongs to this set of rules")
     -- the line stays up and the box asks why; nothing else can be answered meanwhile
     check(w.message:GetText():find("trump", 1, true), "the line stays up for your reason")
     equal(w.why:IsShown(), true); equal(w.next:IsShown(), true)
@@ -478,6 +486,15 @@ scenario("training: every line is put to you first, then the filter's call comes
     equal(ns.Trainer:Describe().page, "train")
     SlashCmdList.AKFOREVERTRADEFILTER("train off")
     check(printed("we agreed on"))
+
+    -- the rules change: the tally so far is put aside and a new one starts
+    local asked = ns.db.trainStats.asked
+    check(asked > 0)
+    ns.db.trainStats.stamp = ns.db.trainStats.stamp + 1 -- (as a changed Terms.lua would)
+    SlashCmdList.AKFOREVERTRADEFILTER("train on")
+    equal(ns.db.trainStats.asked, 0, "a fresh count"); equal(ns.db.trainStats.stamp, ns.Terms.Stamp())
+    equal(ns.db.trainHistory[1].asked, asked, "the old count is kept aside")
+    check(ns.Trainer.widgets.tally:GetText():find("since the last tuning", 1, true), ns.Trainer.widgets.tally:GetText())
 end)
 
 scenario("diagnostics and logout run; the report is SavedVariables-safe and holds no frame", function()

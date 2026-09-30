@@ -272,12 +272,36 @@ end
 ------------------------------------------------------------------------
 -- Training
 ------------------------------------------------------------------------
-local function tally()
-    local stats = ns.db and ns.db.trainStats or { asked = 0, agreed = 0 }
-    if stats.asked == 0 then
-        return "no answers yet"
+-- The tally is kept per set of rules: when the lists change, the count so far is put aside
+-- (db.trainHistory) and a new one starts, so that the number means "since the last tuning".
+local function stats()
+    local db = ns.db
+    if not db then
+        return { asked = 0, agreed = 0 }
     end
-    return string.format("we agreed on %d of %d (%d%%)", stats.agreed, stats.asked, math.floor(100 * stats.agreed / stats.asked + 0.5))
+    local stamp = ns.Terms.Stamp()
+    db.trainStats = db.trainStats or { asked = 0, agreed = 0, stamp = stamp }
+    if db.trainStats.stamp ~= stamp then
+        if db.trainStats.asked > 0 then
+            db.trainHistory = db.trainHistory or {}
+            db.trainHistory[#db.trainHistory + 1] = { stamp = db.trainStats.stamp, asked = db.trainStats.asked,
+                agreed = db.trainStats.agreed, until_ = type(time) == "function" and time() or nil }
+        end
+        db.trainStats = { asked = 0, agreed = 0, stamp = stamp }
+        ns:Log("tally_reset", { stamp = stamp })
+    end
+    return db.trainStats
+end
+Trainer.Stats = stats
+
+local function tally()
+    local current = stats()
+    local rounds = ns.db and ns.db.trainHistory and #ns.db.trainHistory or 0
+    local since = rounds > 0 and " since the last tuning" or ""
+    if current.asked == 0 then
+        return "no answers yet" .. since
+    end
+    return string.format("we agreed on %d of %d (%d%%)%s", current.agreed, current.asked, math.floor(100 * current.agreed / current.asked + 0.5), since)
 end
 
 local function refreshTraining()
@@ -343,7 +367,7 @@ local function recordLabel(entry, label)
         return
     end
     db.labels = db.labels or {}
-    db.trainStats = db.trainStats or { asked = 0, agreed = 0 }
+    local current = stats()
     local agree = (label == "trade") == (entry.keep == true)
     db.labels[#db.labels + 1] = {
         id = entry.id, t = entry.t, ch = entry.ch, who = entry.who, text = entry.text,
@@ -353,9 +377,9 @@ local function recordLabel(entry, label)
     while #db.labels > LABELS_MAX do
         table.remove(db.labels, 1)
     end
-    db.trainStats.asked = db.trainStats.asked + 1
+    current.asked = current.asked + 1
     if agree then
-        db.trainStats.agreed = db.trainStats.agreed + 1
+        current.agreed = current.agreed + 1
     end
     -- the log entry carries your call too, for the review page
     entry.label = label
@@ -573,7 +597,7 @@ end)
 
 ns:RegisterCommand("clear", "forget the logged lines and your answers", function()
     if ns.db then
-        ns.db.log, ns.db.labels, ns.db.trainStats = {}, {}, { asked = 0, agreed = 0 }
+        ns.db.log, ns.db.labels, ns.db.trainStats, ns.db.trainHistory = {}, {}, nil, nil
     end
     queue, current, dropped, awaiting = {}, nil, 0, nil
     if window and window:IsShown() then
