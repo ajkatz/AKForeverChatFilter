@@ -55,33 +55,53 @@ local SWORD = "|cff0070dd|Hitem:2296:0:0:0:0:0:0:0:60|h[Gloves of Old]|h|r"
 ------------------------------------------------------------------------
 Mock.realPrint("AKForeverTradeFilter scenarios")
 
-scenario("the rules: game business stays, the world outside goes, and every verdict says why", function()
+scenario("the rules: seven kinds of line, and every verdict says why", function()
     local ns = start()
     local Rules = ns.Rules
-    local function verdict(text, mode)
-        return Rules.Verdict(text, mode or "strict")
+    local function verdict(text, shown)
+        return Rules.Verdict(text, shown or "game")
     end
     local v = verdict("WTS " .. SWORD .. " 50g pst")
-    equal(v.keep, true); check(v.reason:find("^game business"), v.reason)
-    check(v.reason:find("a link", 1, true) and v.reason:find("wts", 1, true), "the link and the trade word are named: " .. v.reason)
+    equal(v.keep, true); equal(v.kind, "trade"); check(v.reason:find("^trade: "), v.reason)
+    check(v.reason:find("wts", 1, true) and v.reason:find("50g", 1, true), "the trade words are named: " .. v.reason)
     equal(v.score, 3 + 2 + 2 + 2 + 1, "a link, wts, a sum of gold, pst, and the gloves")
-    equal(verdict("lf healer for wc").keep, true)
-    equal(verdict("how do i get to booty bay").keep, true, "a question about the game is game business")
-    v = verdict("anyone else think trump is doing great")
-    equal(v.keep, false); equal(v.reason, "real-world talk: trump")
+    equal(verdict("LFM SM cath need healer and 1 dps").kind, "groups")
+    equal(verdict("lf healer for wc").kind, "groups")
+    equal(verdict("lf lock for summons at brd, will tip").kind, "trade", "a service for a tip, though it starts with lf")
+    equal(verdict("<Forever Bound> is recruiting all classes for MC, pst").kind, "guilds")
+    check(verdict("<Forever Bound> is recruiting all classes for MC, pst").reason:find("a <guild>", 1, true))
+    equal(verdict("lf guild, 60 rogue").kind, "guilds", "looking for one is guild business too")
+    equal(verdict("how do i get to booty bay").kind, "questions")
+    check(verdict("how do i get to booty bay").reason:find("^a question about the game"), verdict("how do i get to booty bay").reason)
+    equal(verdict("anyone know if they are gonna up the level?").kind, "questions")
+    equal(verdict("gnome is fun on the other side").kind, "talk")
+    equal(verdict("did someone say " .. SWORD .. "?").kind, "questions", "a link alone is not trade")
+    equal(verdict("anyone else think trump is doing great").kind, "world")
+    equal(verdict("anyone else think trump is doing great").reason, "real-world talk: trump")
+    equal(verdict("lol").kind, "chatter"); equal(verdict("lol").reason, "chatter (chatter off)"); equal(verdict("lol").sure, false, "nothing to go by")
+    equal(verdict("anyone else lagging?").kind, "questions", "lag is the game's")
+
+    -- the presets
+    equal(verdict("WTS " .. SWORD .. " 50g", "trade").keep, true)
+    equal(verdict("LFM SM cath need healer", "trade").keep, false, "mode trade: trade only")
+    check(verdict("LFM SM cath need healer", "trade").reason:find("(groups off)", 1, true))
+    equal(verdict("how do i get to booty bay", "trade").keep, false)
+    equal(verdict("how do i get to booty bay", "game").keep, true)
+    equal(verdict("lol", "game").keep, false); equal(verdict("lol", "chat").keep, true)
+    equal(verdict("lol", "balanced").keep, true, "the first version's names still work"); equal(verdict("lol", "strict").keep, false)
+    equal(verdict("trump 2028", "chat").keep, false, "the world outside never stays")
+    -- one kind at a time
+    local noGuilds = { trade = true, groups = true, guilds = false, questions = true, talk = true, chatter = false }
+    equal(verdict("<Forever Bound> is recruiting", noGuilds).keep, false)
+    equal(verdict("LFM SM", noGuilds).keep, true)
+
+    -- the world outweighs the game, but not a trade line with a link and a price
     equal(verdict("biden is a warlock lol").keep, false, "a loud word of the world outweighs a word of the game")
-    equal(verdict("wts " .. SWORD .. " 50g made in china").keep, true, "but not a trade line with a link and a price")
+    equal(verdict("wts " .. SWORD .. " 50g made in china").keep, true)
     equal(verdict("trade war is killing the economy").keep, false, "'trade war' is a phrase of the world, whatever 'trade' is")
     equal(verdict("Trump's a joke").reason, "real-world talk: trump", "a possessive is the same word")
     equal(verdict("the alt-right is at it again").keep, false, "a hyphen is a space")
     check(verdict("the alt-right is at it again").reason:find("alt right", 1, true))
-
-    -- chatter: strict hides it, balanced keeps it
-    v = verdict("lol")
-    equal(v.keep, false); equal(v.reason, "not game business"); equal(v.sure, false, "nothing to go by")
-    v = verdict("lol", "balanced")
-    equal(v.keep, true); equal(v.reason, "chatter, kept")
-    equal(verdict("anyone else lagging?").keep, true, "lag is the game's")
 
     -- countries are a hard pass; nationalities in passing
     equal(verdict("the US is falling apart").keep, false)
@@ -92,59 +112,136 @@ scenario("the rules: game business stays, the world outside goes, and every verd
     equal(verdict("any canadians here?").keep, false, "in passing counts against a line with nothing else")
     equal(verdict("any canadians here?").reason, "the world outside: canadians")
     equal(verdict("french speaking guild recruiting").keep, true, "guild business in another language is guild business")
+    equal(verdict("french speaking guild recruiting").kind, "guilds")
     equal(verdict("israel and iran again").keep, false)
     equal(verdict("what did obama ever do").keep, false, "a former president is an easy one")
     equal(verdict("reagan would have hated this").keep, false)
-
-    -- balanced: the world goes, the rest stays
-    equal(verdict("putin is winning", "balanced").keep, false)
-    equal(verdict("nice weather today", "balanced").keep, false, "in passing is enough with nothing on the game's side")
-    equal(verdict("gg everyone", "balanced").keep, true)
+    equal(verdict("nice weather today", "chat").keep, false, "in passing is enough with nothing on the game's side")
+    equal(verdict("gg everyone", "chat").keep, true)
 
     -- what '/gtf test' prints
-    check(Rules.Explain("wts sword 50g"):find("^KEPT %(game business"), Rules.Explain("wts sword 50g"))
+    check(Rules.Explain("wts sword 50g"):find("^KEPT %(trade"), Rules.Explain("wts sword 50g"))
     check(Rules.Explain("trump 2028"):find("^HIDDEN %(real%-world talk: trump; score %-3: trump %-3%)"), Rules.Explain("trump 2028"))
 end)
 
-scenario("a thread: after a real-world line the same sender's next lines go too, unless clearly game business", function()
+scenario("a thread: after a real-world line the same sender's chatter goes too, and a reply naming them, unless clearly game business", function()
     local ns = start()
     local Rules = ns.Rules
     Rules.ResetThreads()
     local now = 1000
-    equal(Rules.Verdict("trump 2028", "balanced", "Bob", now, true).keep, false)
-    local v = Rules.Verdict("lol no way", "balanced", "Bob", now + 30, true)
+    equal(Rules.Verdict("trump 2028", "chat", "Bob Bobson", now, true).keep, false)
+    local v = Rules.Verdict("lol no way", "chat", "Bob Bobson", now + 30, true)
     equal(v.keep, false, "chatter that follows a real-world line is the same thread")
     check(v.reason:find("^goes on from a real%-world line"), v.reason)
-    equal(Rules.Verdict("lol no way", "balanced", "Alice", now + 30, true).keep, true, "somebody else's chatter is not")
-    equal(Rules.Verdict("wts " .. SWORD, "balanced", "Bob", now + 60, true).keep, true, "clearly game business escapes the thread")
-    equal(Rules.Verdict("lol no way", "balanced", "Bob", now + 90, true).keep, true, "and ends it")
-    equal(Rules.Verdict("trump 2028", "balanced", "Bob", now + 100, true).keep, false)
-    equal(Rules.Verdict("lol no way", "balanced", "Bob", now + 100 + 181, true).keep, true, "a thread is three minutes long")
-    equal(Rules.Verdict("trump 2028", "balanced", "Bob", now + 400, false).keep, false)
-    equal(Rules.Verdict("lol no way", "balanced", "Bob", now + 410, false).keep, true, "sticky off: every line on its own")
+    equal(Rules.Verdict("lol no way", "chat", "Alice Aly", now + 30, true).keep, true, "somebody else's chatter is not")
+    v = Rules.Verdict("Bob you are so right", "chat", "Carl Carlson", now + 40, true)
+    equal(v.keep, false, "... unless it names him"); check(v.reason:find("^a reply to Bob Bobson, who was talking about the world outside"), v.reason)
+    equal(Rules.Verdict("wts " .. SWORD, "chat", "Bob Bobson", now + 60, true).keep, true, "clearly game business escapes the thread")
+    equal(Rules.Verdict("lol no way", "chat", "Bob Bobson", now + 90, true).keep, true, "and ends it")
+    equal(Rules.Verdict("trump 2028", "chat", "Bob Bobson", now + 100, true).keep, false)
+    equal(Rules.Verdict("lol no way", "chat", "Bob Bobson", now + 100 + 181, true).keep, true, "a thread is three minutes long")
+    equal(Rules.Verdict("trump 2028", "chat", "Bob Bobson", now + 400, false).keep, false)
+    equal(Rules.Verdict("lol no way", "chat", "Bob Bobson", now + 410, false).keep, true, "sticky off: every line on its own")
+end)
+
+scenario("a conversation about the game: the answers to a game question count as questions, and so does a reply naming somebody who just spoke", function()
+    local ns = start()
+    local Rules = ns.Rules
+    Rules.ResetThreads()
+    local now = 2000
+    local function verdict(text, sender, at, shown)
+        return Rules.Verdict(text, shown or "game", sender, now + at, true, true)
+    end
+    -- the first real session, as it went
+    equal(verdict("anyone know if they are gonna up the level?", "Firemoon Night", 0).kind, "questions")
+    local v = verdict("yes tomorrow", "Shadow Seer", 5)
+    equal(v.keep, true, "an answer"); equal(v.kind, "questions"); equal(v.reason, "an answer after Firemoon Night's question"); equal(v.sure, false, "a guess, for the trainer")
+    equal(verdict("i think tomorrow no?", "Gaga Prime", 8).keep, true)
+    equal(verdict("yes", "Perdition Eversorrow", 12).keep, true)
+    equal(verdict("my mandated union break is over, gotta go back to work now", "Lightbringer Nictalope", 13).keep, false, "a speech is no answer")
+    equal(verdict("Link please head from Leatherworking please", "Holly Boy", 20).kind, "talk")
+    v = verdict("which one Holly", "Inyanis Ninyomae", 25)
+    equal(v.keep, true); equal(v.reason, "a reply to Holly Boy", "named, whatever the timing")
+    -- the window: a minute, each answer buying half a minute more, six answers at most
+    equal(verdict("lol", "Someone Else", 58).keep, true, "the window is still open: a minute")
+    equal(verdict("ok", "Someone Else", 58 + 21).keep, false, "each answer buys twenty seconds, no more: closed now")
+    equal(verdict("Does anyone want to do Wailing Caverns?", "Cbiscuit Lancer", 95).kind, "groups")
+    equal(verdict("RIP Man City hahaha", "Maelor Cadarn", 97).keep, false, "a group forming gets its answers by whisper: no window")
+    equal(verdict("holly which one", "Inyanis Ninyomae", 100).keep, false, "a name is written as a name: Forever's first names are common words")
+    -- an answer that ends in a question mark opens no window of its own; a joke question opens none at all
+    equal(verdict("where is the wc entrance", "Asker Askerson", 120).kind, "questions")
+    equal(verdict("?", "Puzzled Pete", 170).keep, true, "an answer, of sorts")
+    equal(verdict("nothing", "Someone Else", 205).keep, false, "the answer bought half a minute, not a window of its own")
+    equal(verdict("did someone say " .. SWORD .. "?", "Meme Lord", 250).kind, "questions")
+    equal(verdict("lol", "Someone Else", 252).keep, false, "a joke question seeks no answer: no window")
+    equal(verdict("What would ya do for a " .. SWORD, "Meme Lord", 260).kind, "questions")
+    equal(verdict("anything", "Someone Else", 262).keep, false, "a question with nothing but a link's name in it: no window either")
+    equal(verdict("where is the rfd entrance", "Asker Askerson", 300).kind, "questions")
+    for index = 1, 4 do
+        equal(verdict("answer " .. index, "Helper " .. index, 300 + index).keep, true, "answer " .. index)
+    end
+    equal(verdict("answer 5", "Helper 5", 305).keep, false, "four answers is enough")
+    -- not with answers off, nor with questions hidden
+    equal(verdict("where is the rfd entrance", "Asker Askerson", 400).kind, "questions")
+    equal(Rules.Verdict("yes tomorrow", "game", "Shadow Seer", now + 402, true, false).keep, false, "answers off: chatter is chatter")
+    equal(verdict("yes tomorrow", "Shadow Seer", 403, "trade").keep, false, "mode trade: no questions, no answers")
+    -- a question about the world outside opens no window
+    equal(verdict("who is voting for trump?", "Bob Bobson", 500).kind, "world")
+    equal(verdict("me", "Carl Carlson", 502).keep, false)
+    -- a name shorter than three letters is no name to go by
+    equal(verdict("wts " .. SWORD, "Al Alson", 600).kind, "trade")
+    equal(verdict("Al is here", "Dan Danson", 601).keep, false)
+    -- the same through the filter, with the real settings
+    Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
+    equal(Mock.chat({ text = "south of the crossroads, in the mountain", sender = "Ben Benson" }), true, "kept by its words")
+    equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), true, "and the bare answer kept as one")
+    equal(lastLog(ns).kind, "questions")
+    SlashCmdList.AKFOREVERTRADEFILTER("answers off")
+    equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false)
+    SlashCmdList.AKFOREVERTRADEFILTER("hide questions")
+    check(printed("a question about the game: hidden"))
+    equal(Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" }), false, "questions off: the question goes too")
+    equal(Mock.chat({ text = "wts " .. SWORD, sender = "Ann Annson" }), true)
+    SlashCmdList.AKFOREVERTRADEFILTER("kinds")
+    check(printed("hidden: questions, chatter"), "the kinds are listed")
+    SlashCmdList.AKFOREVERTRADEFILTER("hide guilds")
+    equal(Mock.chat({ text = "<Forever Bound> is recruiting", sender = "Eve Evans" }), false, "guild recruitment off")
+    SlashCmdList.AKFOREVERTRADEFILTER("mode game")
+    equal(Mock.chat({ text = "<Forever Bound> is recruiting", sender = "Eve Evans" }), true, "a preset puts every kind back")
+    SlashCmdList.AKFOREVERTRADEFILTER("hide world")
+    check(printed("usage: /gtf hide trade | groups"), "the world outside cannot be shown")
+    SlashCmdList.AKFOREVERTRADEFILTER("mode trade")
+    check(printed("mode: trade (trade only)"))
+    equal(Mock.chat({ text = "LFM SM cath need healer", sender = "Ann Annson" }), false)
+    -- the first version's setting is read as its preset
+    local db = AKForeverTradeFilterDB
+    db.chars["Purrdee - ClassicBetaPvE"].options.kinds = nil
+    db.chars["Purrdee - ClassicBetaPvE"].options.mode = "balanced"
+    ns = start({ db = db })
+    equal(ns.Filter.ModeName(), "chat")
 end)
 
 scenario("the words you teach outrank the lists, and are kept", function()
     local ns = start()
-    equal(ns.Rules.Verdict("who wants noggenfogger", "strict").keep, true, "an elixir of the game")
+    equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, true, "an elixir of the game")
     SlashCmdList.AKFOREVERTRADEFILTER("block noggenfogger")
     check(printed("'noggenfogger' is the world outside from now on"))
-    equal(ns.Rules.Verdict("who wants noggenfogger", "strict").keep, false)
-    equal(ns.Rules.Verdict("spaghetti time", "strict").keep, false)
+    equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, false)
+    equal(ns.Rules.Verdict("spaghetti time", "game").keep, false)
     SlashCmdList.AKFOREVERTRADEFILTER("allow spaghetti time")
-    equal(ns.Rules.Verdict("spaghetti time", "strict").keep, true, "a phrase can be taught too")
+    equal(ns.Rules.Verdict("spaghetti time", "game").keep, true, "a phrase can be taught too")
     equal(ns.db.words["spaghetti time"], "game")
     SlashCmdList.AKFOREVERTRADEFILTER("words")
     check(printed("spaghetti time - game business") and printed("noggenfogger - the world outside") and printed("2 word(s) taught"))
     SlashCmdList.AKFOREVERTRADEFILTER("unlearn noggenfogger")
-    equal(ns.Rules.Verdict("who wants noggenfogger", "strict").keep, true)
+    equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, true)
     SlashCmdList.AKFOREVERTRADEFILTER("unlearn cheese")
     check(printed("usage: /gtf unlearn"))
 
     -- taught words come back next session
     local db = AKForeverTradeFilterDB
     ns = start({ db = db })
-    equal(ns.Rules.Verdict("spaghetti time", "strict").keep, true, "remembered")
+    equal(ns.Rules.Verdict("spaghetti time", "game").keep, true, "remembered")
 end)
 
 scenario("only Trade is filtered out of the box; General when asked; every other channel is left alone", function()
@@ -171,13 +268,13 @@ scenario("only Trade is filtered out of the box; General when asked; every other
     SlashCmdList.AKFOREVERTRADEFILTER("on")
     equal(Mock.chat({ text = "trump is the best" }), false)
 
-    SlashCmdList.AKFOREVERTRADEFILTER("mode balanced")
-    equal(Mock.chat({ text = "lol", sender = "Carl" }), true, "balanced keeps chatter (from somebody who was not just talking politics)")
+    SlashCmdList.AKFOREVERTRADEFILTER("mode chat")
+    equal(Mock.chat({ text = "lol", sender = "Carl" }), true, "chat keeps chatter (from somebody who was not just talking politics)")
     equal(Mock.chat({ text = "lol" }), false, "Bob was: his chatter goes on from his real-world line")
-    SlashCmdList.AKFOREVERTRADEFILTER("mode strict")
-    equal(Mock.chat({ text = "lol", sender = "Carl" }), false, "strict does not")
+    SlashCmdList.AKFOREVERTRADEFILTER("mode game")
+    equal(Mock.chat({ text = "lol", sender = "Carl" }), false, "game does not")
     SlashCmdList.AKFOREVERTRADEFILTER("mode sideways")
-    check(printed("usage: /gtf mode strict | balanced"))
+    check(printed("usage: /gtf mode trade | game | chat"))
 
     -- unreadable: hands off, and counted
     equal(Mock.chat({ text = "trump is the best", secret = "text" }), true, "a secret line goes through untouched")
@@ -223,7 +320,8 @@ scenario("the review window: the lines that went, with the reason; a click flags
     equal(#list.__messages, 2, "the two hidden lines")
     check(list.__messages[1]:find("Bob", 1, true) and list.__messages[1]:find("real-world talk: trump", 1, true), list.__messages[1])
     check(list.__messages[1]:find("|Hgtf:2|h", 1, true), "each line is a link to itself")
-    check(list.__messages[2]:find("not game business", 1, true))
+    check(list.__messages[1]:find("hidden|r world", 1, true), "the kind is shown: " .. list.__messages[1])
+    check(list.__messages[2]:find("chatter", 1, true))
     check(ns.Trainer.widgets.note:GetText():find("hidden lines, 2 shown", 1, true), ns.Trainer.widgets.note:GetText())
 
     SlashCmdList.AKFOREVERTRADEFILTER("review all")
@@ -367,7 +465,7 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
     local report = AKForeverTradeFilterDB.diag
     equal(report.asked, true); check(AKForeverTradeFilterDB.diagAtLogout, "the logout's report goes beside it")
     equal(report.addonVersion, "0.1.0-test")
-    equal(report.options.mode, "strict"); equal(report.filter.how, "ChatFrameUtil.AddMessageEventFilter")
+    equal(report.options.mode, "game"); equal(report.options.kinds.guilds, true); equal(report.filter.how, "ChatFrameUtil.AddMessageEventFilter")
     equal(report.filter.stats.seen, 3); equal(report.filter.stats.hidden, 2)
     equal(#report.log, 3); equal(report.log[2].why, "real-world talk: trump")
     equal(#report.labels, 1); equal(report.labels[1].label, "not"); equal(report.labels[1].id, 3, "an answer knows its line")

@@ -6,8 +6,13 @@ For **World of Warcraft: Forever** (1.60.1, Interface 16001). The Great Trade Fi
 
 - Every Trade line is scored by its words: game business counts up (an item link, WTS/WTB/LF, gold, a
   profession, a dungeon, a zone, a class), the world outside counts down (a politician past or present,
-  a party, a country, a war, a faith, a screen). **Strict** (default) keeps only game business; **balanced**
-  keeps chatter and drops the world outside. Every verdict comes with its reason.
+  a party, a country, a war, a faith, a screen). The words sort a line into one of seven kinds - trade,
+  groups forming, guilds, questions about the game (with their answers), other game talk, chatter, the
+  world outside - and every kind but the world is a setting: `/gtf mode trade|game|chat` sets them
+  together, `/gtf hide guilds` one at a time. Every verdict comes with its reason.
+- A conversation about the game: chatter within a minute of a game question is taken for an answer, and a
+  line naming somebody who just spoke about the game for a reply; both count as questions (`/gtf answers
+  off` turns that off).
 - A country named is a line gone; `US` in capitals counts, `us` the pronoun does not. A nationality only
   counts in passing, so a guild recruiting in French is still guild business.
 - A thread: after a real-world line the same sender's next lines go too for three minutes, unless one is

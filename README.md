@@ -9,12 +9,30 @@ point of the first weeks: the training mode and the review window are how the wo
 
 Every line of Trade is scored by the words in it. Game business counts up - an item link, `WTS`/`WTB`/`LF`,
 a sum of gold, a profession, a dungeon, a zone, a class - and the world outside counts down: a politician,
-a party, a country, a war, a faith, a screen. The sum decides:
+a party, a country, a war, a faith, a screen. The words sort the line into one of seven kinds:
 
-- **strict** (the default): a line stays only when it is game business. Real-world talk goes, and so does
-  plain chatter (`lol`, `thanks man`). A question about the game is game business (`where is the RFD
-  entrance`).
-- **balanced** (`/gtf mode balanced`): real-world talk goes, chatter stays.
+| kind | what it is | for instance |
+|---|---|---|
+| **trade** | selling, buying, a price, a service for a tip | `WTS [Gloves] 50g`, `lf enchanter, tipping`, `ports to org 5g` |
+| **groups** | a group forming for a dungeon, a raid, a quest | `LFM SM cath need healer`, `lf2m brd` |
+| **guilds** | a guild recruiting, or somebody looking for one | `<Forever Bound> is recruiting`, `lf guild` |
+| **questions** | a question about the game - and its answers | `where is the RFD entrance`, `yes tomorrow` |
+| **talk** | anything else about the game | `gnome is fun on the other side`, `server just died` |
+| **chatter** | nothing of the game in it | `lol`, `thanks man` |
+| **world** | the world outside | a politician, a country, a war, a faith, a screen |
+
+The world outside never stays. Which of the others do is a setting per kind:
+
+- `/gtf mode trade`: trade only.
+- `/gtf mode game` (the default): everything about the game - trade, groups, guilds, questions, talk.
+- `/gtf mode chat`: everything but the world outside.
+- `/gtf hide guilds`, `/gtf show chatter`: one kind at a time; `/gtf kinds` says where things stand.
+
+**A conversation about the game.** The answer to a game question rarely has a word of the game in it
+(`yes tomorrow`). So chatter within a minute of a game question is taken for an answer - each answer keeps
+the window open twenty seconds longer, four answers at most - and so is a line naming somebody who spoke
+about the game in the last three minutes (`which one Holly`). Both count as questions. `/gtf answers off`
+turns that off, and a line counts by its own words only. Sarcasm is beyond it.
 
 A country named is a line gone (`canada`, `israel`, `the US` - in capitals; `us` the pronoun is not a
 country), and so is any politician past or present. A nationality or a language only counts in passing:
@@ -23,7 +41,8 @@ outweighs two words of the game (`biden is a warlock` goes), but not a trade lin
 (`WTS [Sulfuras] 50g made in china` stays).
 
 **A thread:** somebody whose line went for real-world talk usually goes on (`lol no he didn't`). For three
-minutes their lines go too, unless one is clearly game business. `/gtf sticky off` turns that off.
+minutes their chatter goes too, and so does a reply naming them, unless a line is clearly game business.
+`/gtf sticky off` turns that off.
 
 Trade is filtered out of the box; `/gtf general on` adds General. No other channel is touched. Nothing is
 rewritten: the client's own message event filter (`ChatFrameUtil.AddMessageEventFilter`) hands the line
@@ -47,7 +66,7 @@ that should not have, what went that should have stayed, and the words that deci
 
 ## Commands
 
-`/gtf` lists them: `on`, `off`, `mode strict|balanced`, `general on|off`, `sticky on|off`, `test`,
+`/gtf` lists them: `on`, `off`, `mode trade|game|chat`, `show <kind>`, `hide <kind>`, `kinds`, `answers on|off`, `general on|off`, `sticky on|off`, `test`,
 `allow`, `block`, `unlearn`, `words`, `train on|unsure|off`, `review [all]`, `clear`, `reset`, `stats`, `diag`.
 `/akforevertradefilter` is the long form.
 

@@ -1,19 +1,34 @@
 -- Rules: one line of chat in, a verdict out - and the reason, in words, because a filter you cannot
 -- argue with is a filter you switch off.
 --
--- HOW A LINE IS SCORED. The line is lower-cased and cut into words; every word (and every phrase) on the
--- lists in Terms.lua adds its weight, every pattern that matches (a hyperlink, a sum of gold, a web
--- address) adds its own. Game business counts up, the world outside counts down:
---     +3  an item / spell / quest link           -3  politics, a country, a war, a faith
---     +2  a trade word (wts, lf, port, guild)    -1  a nationality, a screen, the life outside, in passing
---     +1  a word of the game (rogue, brd, mats)
--- The sum is the score. STRICT (the default) keeps a line only when the score is above nought: game
--- business, and nothing else. BALANCED keeps a line unless the score is below nought: the world outside
--- goes, plain chatter ("lol", "anyone else lagging") stays. A loud word of the world outside outweighs two
--- words of the game: "biden is a warlock" goes, "wts [Sulfuras] 50g made in china" stays.
+-- HOW A LINE IS SORTED. The line is lower-cased and cut into words; every word (and every phrase) on the
+-- lists in Terms.lua counts for the KIND it belongs to, and every pattern that matches (a hyperlink, a
+-- sum of gold, a guild's <name>, a web address) counts for its own. Seven kinds of line:
+--     trade      selling, buying, a price, a service for a tip       (wts, wtb, 50g, ench, ports)
+--     groups     a group forming for a dungeon, a raid, a quest       (lfm, lf2m, need healer, tank)
+--     guilds     a guild recruiting, or somebody looking for one      (recruiting, <Forever Bound>, lf guild)
+--     questions  a question about the game - and its answers          (where is the rfd entrance, "yes tomorrow")
+--     talk       anything else about the game                         (gnome is fun, server just died)
+--     chatter    nothing of the game in it                            (lol, thanks man)
+--     world      the world outside                                    (a politician, a country, a war, a faith)
+-- The world outside wins whenever its loud words outweigh the game's: "biden is a warlock" goes, "wts
+-- [Sulfuras] 50g made in china" stays. Then trade, groups and guilds are told apart by which of them
+-- the words favour (a tie goes to guilds, then groups); a line with only words of the game is talk, or a
+-- question if it looks like one; a line with nothing is chatter.
 --
--- A THREAD. Somebody whose line went for real-world talk is likely to go on ("lol no he didn't"): for a
--- few minutes their lines go too, unless one is clearly game business (score 2 or more).
+-- WHICH KINDS STAY is a setting per kind (Filter.lua): "/gtf mode trade" shows trade only, "/gtf mode
+-- game" (the default) everything about the game, "/gtf mode chat" everything but the world outside;
+-- "/gtf hide guilds" takes one kind out.
+--
+-- A CONVERSATION. The answer to a game question rarely has a word of the game in it ("yes tomorrow"), so
+-- short chatter within a minute of a question that seeks one ("anyone know ...", "where is ...", with a
+-- word of the game in it) is taken for an answer - each answer keeps the window open twenty seconds
+-- longer, four at most, and never opens a window of its own - and a line naming somebody who spoke about
+-- the game in the last three minutes, written as a name (Holly, not holly: Forever's first names are
+-- common words), is taken for a reply. Both count as questions. And somebody whose line went for the
+-- world outside is likely to go on ("lol no he didn't"): for three minutes their chatter goes too, and so
+-- does a reply naming them, unless a line is clearly game business. (All of it measured on the first
+-- session's replay: a meme question had opened windows for the jokes that followed.)
 --
 -- Pure Lua: no frame, no API. The tests run it on a table of lines.
 local _, ns = ...
@@ -21,19 +36,32 @@ local _, ns = ...
 local Rules = {}
 ns.Rules = Rules
 
-local THREAD_SECONDS = 180  -- how long a real-world talker's lines keep going after one went
-local THREAD_ESCAPE = 2     -- ... unless a line scores this much: clearly game business
 local LOUD = 3              -- the weight that makes a word "real-world talk" rather than "in passing"
 local REASON_TERMS = 4      -- how many of the words are named in the reason
+local THREAD_SECONDS = 180  -- how long a real-world talker's chatter keeps going after one line went
+local THREAD_ESCAPE = 2     -- ... unless a line scores this much on the game's side: clearly game business
+local SPEAKER_SECONDS = 180 -- how long a name stays "somebody who just spoke"
+local QUESTION_SECONDS = 60 -- chatter this soon after a game question is taken for an answer
+local ANSWER_SECONDS = 20   -- ... and each answer keeps the window open this much longer
+local ANSWERS_MAX = 4       -- ... for at most this many answers (the first real session: four real ones, then jokes)
+local ANSWER_WORDS = 8      -- an answer is a short line; a speech is not an answer
 
--- word -> weight, phrase -> weight; built once from Terms.lua, rebuilt when a word is taught
+Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" }
+Rules.PRESETS = {
+    trade = { trade = true, groups = false, guilds = false, questions = false, talk = false, chatter = false },
+    game = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = false },
+    chat = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = true },
+}
+Rules.PRESETS.strict, Rules.PRESETS.balanced = Rules.PRESETS.game, Rules.PRESETS.chat -- (the first names)
+
+-- word -> { weight, kind }, phrases, patterns; built once from Terms.lua, rebuilt when a word is taught
 local single, phrases, patterns = {}, {}, {}
 
-local function addWord(word, weight, label)
+local function addWord(word, weight, kind)
     if string.find(word, " ", 1, true) then
-        phrases[#phrases + 1] = { text = word, weight = weight, label = label }
+        phrases[#phrases + 1] = { text = word, weight = weight, kind = kind }
     else
-        single[word] = { weight = weight, label = label }
+        single[word] = { weight = weight, kind = kind }
     end
 end
 
@@ -41,15 +69,17 @@ function Rules.Rebuild(taught)
     single, phrases, patterns = {}, {}, {}
     for _, list in ipairs(ns.Terms.LISTS) do
         for _, word in ipairs(list.words) do
-            addWord(word, list.weight, list.label)
+            addWord(word, list.weight, list.kind)
         end
     end
     -- what you taught outranks the lists: '/gtf allow raid' and '/gtf block cheese'
     for word, kind in pairs(taught or {}) do
         if kind == "game" then
-            addWord(word, 2, "taught")
+            addWord(word, 2, "trade")
         elseif kind == "real" then
-            addWord(word, -3, "taught")
+            addWord(word, -3, "world")
+        elseif Rules.PRESETS.game[kind] ~= nil then
+            addWord(word, 2, kind)
         end
     end
     for _, entry in ipairs(ns.Terms.PATTERNS) do
@@ -62,6 +92,7 @@ end
 function Rules.Normalize(text)
     local line = string.lower(text)
     line = string.gsub(line, "|c%x%x%x%x%x%x%x%x", "")
+    line = string.gsub(line, "|cn[^:|]*:", "")                 -- the newer colour escape, |cnIQ5:
     line = string.gsub(line, "|r", "")
     line = string.gsub(line, "|t[^|]*|t", " ")
     line = string.gsub(line, "|h[^|]*|h(%[[^%]]*%])|h", " %1 ") -- a link: its [name] stays, the rest goes
@@ -81,7 +112,6 @@ local function words(line)
         word = string.gsub(word, "^'+", "")
         word = string.gsub(word, "'+$", "")
         word = string.gsub(word, "'s$", "")
-        word = string.gsub(word, "%.$", "")
         if word ~= "" then
             list[#list + 1] = word
         end
@@ -89,26 +119,26 @@ local function words(line)
     return list
 end
 
--- The score of one line, and every term that took part: { score, hits = { {term, weight, label} ... },
--- game, real } - game and real being the sums of each side.
+-- The score of one line: { score, hits = { {term, weight, kind} ... }, game, real, kinds = { [kind] = sum } }
 function Rules.Score(text)
     if #phrases == 0 and next(single) == nil then
         Rules.Rebuild()
     end
-    local hits, score, game, real = {}, 0, 0, 0
-    local function hit(term, weight, label)
-        hits[#hits + 1] = { term = term, weight = weight, label = label }
+    local hits, score, game, real, kinds = {}, 0, 0, 0, {}
+    local function hit(term, weight, kind)
+        hits[#hits + 1] = { term = term, weight = weight, kind = kind }
         score = score + weight
         if weight > 0 then
             game = game + weight
         else
             real = real + weight
         end
+        kinds[kind] = (kinds[kind] or 0) + weight
     end
     -- "US" the country is a capital pair; "us" the pronoun is not a word to block - and in a line
     -- SHOUTED IN CAPITALS the pair says nothing
     if string.find(text, "%l") and (string.find(text, "%f[%w]US%f[%W]") or string.find(text, "%f[%w]U%.S%.")) then
-        hit("US", -LOUD, "real-world")
+        hit("US", -LOUD, "world")
     end
     local line = Rules.Normalize(text)
     local lower = string.lower(text)
@@ -117,22 +147,22 @@ function Rules.Score(text)
         local entry = single[word]
         if entry and not seen[word] then
             seen[word] = true
-            hit(word, entry.weight, entry.label)
+            hit(word, entry.weight, entry.kind)
         end
     end
     local padded = " " .. line .. " "
     for _, phrase in ipairs(phrases) do
         if string.find(padded, " " .. phrase.text .. " ", 1, true) then
-            hit(phrase.text, phrase.weight, phrase.label)
+            hit(phrase.text, phrase.weight, phrase.kind)
         end
     end
     for _, entry in ipairs(patterns) do
         local found = string.match(lower, entry.pattern)
         if found then
-            hit(entry.label == "link" and "a link" or found, entry.weight, entry.label)
+            hit(entry.name or found, entry.weight, entry.kind)
         end
     end
-    return { score = score, hits = hits, game = game, real = real }
+    return { score = score, hits = hits, game = game, real = real, kinds = kinds }
 end
 
 -- The words behind a verdict, for the reason: the loudest first, at most a few
@@ -156,60 +186,184 @@ local function named(hits, side)
     return table.concat(names, ", ")
 end
 
--- threads: sender -> the time their line went for real-world talk
-local threads = {}
+------------------------------------------------------------------------
+-- The conversation
+------------------------------------------------------------------------
+local threads = {}   -- sender -> the time their line went for the world outside
+local speakers = {}  -- first name (lower case) -> { sender, at, side }
+local question = nil -- the last game question: { sender, at, until_, answers }
 
 function Rules.ResetThreads()
-    threads = {}
+    threads, speakers, question = {}, {}, nil
 end
 
--- The verdict for one line: { keep = bool, reason, score, hits, sure }.
---   mode    "strict" | "balanced"
---   sender  who said it (for the thread rule), or nil
---   now     the time, seconds (for the thread rule), or nil
---   sticky  whether the thread rule is on
--- `sure` is false when the line had nothing to go by (no word of either side): the ones a trainer asks about.
-function Rules.Verdict(text, mode, sender, now, sticky)
+local QUESTION_WORDS = { anyone = true, anybody = true, any = true, does = true, ["do"] = true, ["is"] = true, are = true,
+    can = true, could = true, how = true, what = true, where = true, when = true, which = true, why = true, who = true,
+    will = true, would = true, should = true, has = true, have = true }
+
+-- a question, by its shape: a question mark, or a question word up front
+function Rules.LooksLikeQuestion(text)
+    if string.find(text, "?", 1, true) then
+        return true
+    end
+    local first = string.match(Rules.Normalize(text), "^(%S+)")
+    return first ~= nil and QUESTION_WORDS[first] == true
+end
+
+-- the line without its links - name and all
+function Rules.StripLinks(text)
+    local line = string.gsub(text, "|c%x%x%x%x%x%x%x%x", "")
+    line = string.gsub(line, "|cn[^:|]*:", "")
+    line = string.gsub(line, "|H[^|]*|h%[[^%]]*%]|h", " ")
+    line = string.gsub(line, "|H[^|]*|h", " ")
+    line = string.gsub(line, "|r", "")
+    return line
+end
+
+-- a question that seeks an answer: a question word up front, and a word of the game that is not just a
+-- link's name ("did someone say [Thunderfury]?" and "what would you do for a [Thunderfury]" are jokes)
+function Rules.SeeksAnswer(text)
+    local first = string.match(Rules.Normalize(text), "^(%S+)")
+    if first == nil or QUESTION_WORDS[first] ~= true then
+        return false
+    end
+    return Rules.Score(Rules.StripLinks(text)).game > 0
+end
+
+local function firstName(sender)
+    local name = type(sender) == "string" and string.match(sender, "^(%S+)") or nil
+    if name and #name >= 3 then
+        return name
+    end
+    return nil
+end
+
+local function remember(sender, now, side)
+    local name = firstName(sender)
+    if name and now then
+        speakers[name] = { sender = sender, at = now, side = side }
+    end
+end
+
+-- somebody named in the line - written as a name, capitalised - who spoke recently: { sender, side } or nil
+local function namedSpeaker(text, now)
+    if not now then
+        return nil
+    end
+    for name, speaker in pairs(speakers) do
+        if now - speaker.at <= SPEAKER_SECONDS and string.find(text, "%f[%w]" .. name .. "%f[%W]") then
+            return speaker
+        end
+    end
+    return nil
+end
+
+local function wordCount(line)
+    local count = 0
+    for _ in string.gmatch(line, "%S+") do
+        count = count + 1
+    end
+    return count
+end
+
+local KIND_WORDS = { trade = "trade", groups = "a group forming", guilds = "guild business", questions = "a question about the game",
+    talk = "game talk", chatter = "chatter", world = "the world outside" }
+Rules.KIND_WORDS = KIND_WORDS
+
+-- Which of trade, groups and guilds the words favour: the biggest sum, a tie to guilds, then groups.
+local function business(kinds)
+    local best, bestSum = nil, 0
+    for _, kind in ipairs({ "guilds", "groups", "trade" }) do
+        local sum = kinds[kind] or 0
+        if sum > bestSum then
+            best, bestSum = kind, sum
+        end
+    end
+    return best
+end
+
+-- The verdict for one line: { keep = bool, kind, reason, score, hits, sure }.
+--   shown   which kinds stay: a table { trade = true, ... } or a preset's name ("trade" | "game" | "chat")
+--   sender  who said it (for the conversation), or nil
+--   now     the time, seconds, or nil
+--   sticky  whether the thread rule is on (default on)
+--   answers whether chatter after a game question, or naming a game speaker, counts as one (default on)
+-- `sure` is false when the line had nothing of its own to go by: the ones a trainer asks about.
+function Rules.Verdict(text, shown, sender, now, sticky, answers)
+    if type(shown) ~= "table" then
+        shown = Rules.PRESETS[shown or "game"] or Rules.PRESETS.game
+    end
     local scored = Rules.Score(text)
     local score = scored.score
-    local keep, reason
     local loud = scored.real <= -LOUD
+    local kind, reason, sure = nil, nil, #scored.hits > 0
     if loud and score <= 0 then
-        keep, reason = false, "real-world talk: " .. named(scored.hits, -1)
-    elseif score > 0 then
-        keep, reason = true, "game business: " .. named(scored.hits, 1)
+        kind, reason = "world", "real-world talk: " .. named(scored.hits, -1)
     elseif score < 0 then
-        keep, reason = false, "the world outside: " .. named(scored.hits, -1)
-    elseif mode == "balanced" then
-        keep, reason = true, "chatter, kept"
+        kind, reason = "world", "the world outside: " .. named(scored.hits, -1)
+    elseif business(scored.kinds) then
+        kind = business(scored.kinds)
+        reason = KIND_WORDS[kind] .. ": " .. named(scored.hits, 1)
+    elseif score > 0 and Rules.LooksLikeQuestion(text) then
+        kind, reason = "questions", "a question about the game: " .. named(scored.hits, 1)
+    elseif score > 0 then
+        kind, reason = "talk", "game talk: " .. named(scored.hits, 1)
     else
-        keep, reason = false, "not game business"
-    end
-    -- the thread rule
-    if sticky and sender and now then
-        if not keep and loud then
-            threads[sender] = now
-        elseif keep and score < THREAD_ESCAPE then
-            local since = threads[sender]
-            if since and now - since <= THREAD_SECONDS then
-                keep, reason = false, "goes on from a real-world line (" .. reason .. ")"
-            end
-        elseif keep then
-            threads[sender] = nil -- clearly game business again
+        kind, reason = "chatter", "chatter"
+        -- ... unless it is part of a conversation
+        local speaker = namedSpeaker(text, now)
+        if speaker and speaker.side == "world" then
+            kind, reason = "world", "a reply to " .. speaker.sender .. ", who was talking about the world outside"
+        elseif answers ~= false and speaker then
+            kind, reason = "questions", "a reply to " .. speaker.sender
+        elseif answers ~= false and question and now and now <= question.until_ and question.answers < ANSWERS_MAX
+            and wordCount(Rules.Normalize(text)) <= ANSWER_WORDS then
+            kind, reason = "questions", "an answer after " .. question.sender .. "'s question"
+            question.answers = question.answers + 1
+            question.until_ = math.max(question.until_, now + ANSWER_SECONDS)
         end
+    end
+    -- the thread rule: a real-world talker's chatter goes on for a while
+    if sticky ~= false and sender and now and kind ~= "world" and scored.game < THREAD_ESCAPE then
+        local since = threads[sender]
+        if since and now - since <= THREAD_SECONDS then
+            kind, reason = "world", "goes on from a real-world line (" .. reason .. ")"
+        end
+    end
+    -- what the line means for the lines to come
+    if sender and now then
+        if kind == "world" then
+            threads[sender] = now
+            remember(sender, now, "world")
+        else
+            if scored.game >= THREAD_ESCAPE then
+                threads[sender] = nil
+            end
+            remember(sender, now, "game")
+            -- a question about the game that seeks an answer opens the window - a group forming or a service
+            -- wanted gets its answers by whisper, and an answer never opens a window of its own
+            if kind == "questions" and Rules.SeeksAnswer(text) then
+                question = { sender = sender, at = now, until_ = now + QUESTION_SECONDS, answers = 0 }
+            end
+        end
+    end
+    local keep = kind ~= "world" and shown[kind] == true
+    if not keep and kind ~= "world" then
+        reason = reason .. " (" .. kind .. " off)"
     end
     return {
         keep = keep,
+        kind = kind,
         reason = reason,
         score = score,
         hits = scored.hits,
-        sure = #scored.hits > 0,
+        sure = sure,
     }
 end
 
 -- What '/gtf test <line>' prints
-function Rules.Explain(text, mode)
-    local verdict = Rules.Verdict(text, mode or "strict")
+function Rules.Explain(text, shown)
+    local verdict = Rules.Verdict(text, shown or "game")
     local parts = {}
     for _, h in ipairs(verdict.hits) do
         parts[#parts + 1] = h.term .. " " .. (h.weight > 0 and "+" or "") .. h.weight

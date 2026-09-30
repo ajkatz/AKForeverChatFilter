@@ -434,7 +434,7 @@ local function reviewLine(entry)
     elseif entry.label then
         mark = " |cff808080[you: " .. (entry.label == "trade" and "trade" or "not trade") .. "]|r"
     end
-    local verdict = entry.keep and "|cff60ff60kept|r" or "|cffff8080hidden|r"
+    local verdict = (entry.keep and "|cff60ff60kept|r" or "|cffff8080hidden|r") .. (entry.kind and (" " .. entry.kind) or "")
     return string.format("|Hgtf:%d|h|cff808080[%s]|r %s: %s - %s, %s%s|h",
         entry.id or 0, stamp(entry.t), who, Trainer.Plain(entry.text), verdict, why, mark)
 end

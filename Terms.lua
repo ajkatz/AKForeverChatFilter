@@ -1,7 +1,8 @@
 -- The words. Every line of chat is scored by the words in it: what says "game business" counts up, what
--- says "the world outside" counts down, and the sum decides (Rules.lua). The lists are plain data so
--- that a wrong call is a one-line fix - and '/gtf allow <word>' / '/gtf block <word>' teach more without
--- touching this file.
+-- says "the world outside" counts down, and the sum decides (Rules.lua). Every list belongs to a KIND -
+-- trade, groups, guilds, talk (the rest of the game), world - and the kind the words favour is the kind
+-- of the line. The lists are plain data so that a wrong call is a one-line fix - and '/gtf allow <word>'
+-- / '/gtf block <word>' teach more without touching this file.
 --
 -- Rules of thumb for the lists:
 --   * a word that is BOTH stays out: "war" is a warrior, "gates" are AQ's, "if" is Ironforge and a
@@ -17,14 +18,13 @@ local Terms = {}
 ns.Terms = Terms
 
 Terms.LISTS = {
-    -- TRADE: the words that make a line trade, or a group forming, or a service offered
-    { weight = 2, label = "trade", words = {
+    -- TRADE: selling, buying, a price, a service for a tip
+    { weight = 2, kind = "trade", words = {
         "wts", "wtb", "wtt", "wttf", "sell", "selling", "sells", "sold", "buy", "buying", "trade", "trading",
-        "trader", "lf", "lfm", "lfg", "lfw", "lfe", "lft", "lfh", "lfdps", "lf1m", "lf2m", "lf3m", "lf4m",
-        "lfr", "pst", "cod", "obo", "ono", "offer", "offers", "offering", "bid", "bids", "bidding",
-        "gold", "silver", "copper", "tip", "tips", "tipping", "mats", "own mats", "your mats", "my mats",
-        "recruit", "recruits", "recruiting", "recruitment", "guild", "guilds", "boost", "boosting", "boosts",
-        "carry", "carries", "carried", "port", "ports", "portal", "portals", "summon", "summons", "summ",
+        "trader", "lfw", "lfe", "pst", "cod", "obo", "ono", "offer", "offers", "offering", "bid", "bids",
+        "bidding", "gold", "silver", "copper", "tip", "tips", "tipping", "mats", "own mats", "your mats",
+        "my mats", "boost", "boosting", "boosts", "carry", "carries", "carried", "port", "ports", "portal",
+        "portals", "summon", "summons", "summ",
         "ench", "enchant", "enchants", "enchanter", "enchanting", "craft", "crafts", "crafting", "crafter",
         "craftable", "price", "prices", "priced", "cheap", "cheapest", "cheaper", "auction", "auctions",
         "auction house", "on ah", "in ah", "on the ah", "in the ah", "ah price", "ah prices", "than ah",
@@ -32,8 +32,31 @@ Terms.LISTS = {
         "seeking", "hiring", "service", "services", "delivery", "deliver", "vendor", "vendors", "vendored",
         "going for", "how much", "worth", "asking price", "any offers", "make an offer", "best offer",
     } },
-    -- GAME: the vocabulary of the game itself
-    { weight = 1, label = "game", words = {
+    -- GROUPS: a group forming for a dungeon, a raid, a quest
+    { weight = 2, kind = "groups", words = {
+        "lf", "lfm", "lfg", "lft", "lfh", "lfdps", "lf1m", "lf2m", "lf3m", "lf4m", "lf5m", "lfr", "need tank",
+        "need a tank", "need healer", "need a healer", "need heals", "need dps", "need 1", "need 2", "need 3",
+        "need one", "need two", "1 more", "2 more", "3 more", "one more", "two more", "forming", "spots open",
+        "spot left", "spots left", "spot open", "full clear", "anyone want to do", "anyone wanna do",
+        "anyone up for", "who wants to do",
+    } },
+    { weight = 1, kind = "groups", words = {
+        "tank", "tanks", "tanking", "healer", "healers", "heals", "heal", "healing", "dps", "dpser", "dpsers",
+        "group", "grp", "party", "raid", "raids", "raiding", "run", "runs", "spot", "spots", "invite", "inv",
+        "invites", "summons available",
+    } },
+    -- GUILDS: a guild recruiting, or somebody looking for one
+    { weight = 2, kind = "guilds", words = {
+        "recruit", "recruits", "recruiting", "recruitment", "guild", "guilds", "lf guild", "looking for a guild",
+        "looking for guild", "guildless", "social guild", "raiding guild", "leveling guild", "pvp guild",
+        "casual guild", "new guild", "our guild", "join us", "guildies", "gbank", "guild bank",
+    } },
+    { weight = 1, kind = "guilds", words = {
+        "gm", "officer", "officers", "discord", "members", "member", "community", "friendly", "active",
+        "semi-hardcore", "all classes", "all levels",
+    } },
+    -- TALK: the vocabulary of the game itself
+    { weight = 1, kind = "talk", words = {
         -- professions
         "alchemy", "alchemist", "alch", "blacksmith", "blacksmithing", "smith", "smithing", "armorsmith",
         "weaponsmith", "engineer", "engineering", "engi", "eng", "leatherworker", "leatherworking", "lw",
@@ -49,8 +72,8 @@ Terms.LISTS = {
         "brd", "blackrock", "lbrs", "ubrs", "brs", "scholo", "scholomance", "strat", "stratholme", "dire maul",
         "dm east", "dm west", "dm north", "dm tribute", "tribute run", "mc", "molten core", "ony", "onyxia",
         "bwl", "blackwing", "zg", "zul'gurub", "zulgurub", "aq", "aq20", "aq40", "naxx", "naxxramas",
-        "dungeon", "dungeons", "instance", "instances", "raid", "raids", "raiding", "raider", "raiders",
-        "run", "runs", "full clear", "clears", "attune", "attuned", "attunement", "key", "keys", "keyed",
+        "dungeon", "dungeons", "instance", "instances", "raider", "raiders", "clears", "attune", "attuned",
+        "attunement", "key", "keys", "keyed",
         -- zones and cities
         "barrens", "durotar", "mulgore", "tirisfal", "silverpine", "hillsbrad", "ashenvale", "stonetalon",
         "westfall", "elwynn", "dun morogh", "loch modan", "redridge", "duskwood", "wetlands", "darkshore",
@@ -67,14 +90,13 @@ Terms.LISTS = {
         -- classes, specs and roles
         "warrior", "warr", "mage", "mages", "priest", "priests", "rogue", "rogues", "druid", "druids",
         "shaman", "shamans", "sham", "warlock", "warlocks", "lock", "locks", "paladin", "paladins", "pally",
-        "pala", "hunter", "hunters", "hunt", "tank", "tanks", "tanking", "healer", "healers", "heals", "heal",
-        "healing", "dps", "dpser", "dpsers", "ranged", "melee", "caster", "casters", "hybrid", "spec",
+        "pala", "hunter", "hunters", "hunt", "ranged", "melee", "caster", "casters", "hybrid", "spec",
         "specs", "respec", "resto", "feral", "prot", "fury", "arms", "shadow", "disc", "frost", "fire",
         "arcane", "affliction", "demo", "destro", "enh", "enhance", "enhancement", "ele", "elemental",
         "boomkin", "survival", "bm", "mm", "combat", "assassination", "ret", "retri", "hpally", "holy pally",
         "holy priest", "holy spec",
-        -- groups, loot and play
-        "group", "grp", "party", "gm", "officer", "officers", "rep", "boss", "bosses", "wipe", "wiped",
+        -- loot and play
+        "rep", "boss", "bosses", "wipe", "wiped",
         "loot", "loots", "roll", "rolls", "rolled", "ninja", "ninjad", "reserved", "hr", "ms", "os", "greed",
         "bind", "boe", "bop", "epic", "epics", "purple", "purples", "blues", "greens", "greys", "quest",
         "quests", "questing", "escort", "turn in", "turnin", "level", "levels", "lvl", "lvls", "leveling",
@@ -84,8 +106,8 @@ Terms.LISTS = {
         "flightpath", "flight path", "hearth", "hs", "hearthstone", "mount", "mounts", "rez", "res", "ress",
         "resurrect", "buff", "buffs", "buffed", "fort", "fortitude", "motw", "mark of the wild", "intellect",
         "int", "spirit", "water", "food", "conjure", "conjured", "stack", "stacks", "bag", "bags", "slot",
-        "slots", "bank", "whisper", "wisp", "wsp", "pm", "dm me", "whisper me", "w me", "invite", "inv",
-        "invites", "afk", "brb", "lag", "lagging", "latency", "server", "realm", "layer", "layers", "queue",
+        "slots", "bank", "whisper", "wisp", "wsp", "pm", "dm me", "whisper me", "w me", "afk", "brb", "lag",
+        "lagging", "latency", "server", "realm", "layer", "layers", "queue",
         "logout", "relog", "reload", "addon", "addons", "macro", "macros", "keybind", "ui", "dc",
         "disconnect", "disconnected", "patch", "hotfix", "nerf", "nerfed", "stealth", "sap", "sheep",
         "polymorph", "fear", "cc", "kite", "kiting", "pull", "pulls", "pulled", "aggro", "threat", "taunt",
@@ -123,7 +145,7 @@ Terms.LISTS = {
         "ram", "horse", "mechanostrider", "nightsaber", "epic mount", "riding", "mounted",
     } },
     -- THE WORLD OUTSIDE, loud: politics, war, faith, the words no trade line needs
-    { weight = -3, label = "real-world", words = {
+    { weight = -3, kind = "world", words = {
         -- people
         "trump", "donald trump", "biden", "joe biden", "obama", "clinton", "hillary", "kamala", "jd vance",
         "pence", "desantis", "newsom", "aoc", "ocasio", "bernie", "sanders", "pelosi", "mcconnell",
@@ -204,8 +226,8 @@ Terms.LISTS = {
         "btc", "crypto", "ethereum", "nft", "nfts", "dogecoin", "oil prices", "oil price", "gas prices",
         "gas price", "price of oil", "price of gas",
     } },
-    -- THE WORLD OUTSIDE, in passing: a country, a language, a screen - a line about the game may mention them
-    { weight = -1, label = "real-world", words = {
+    -- THE WORLD OUTSIDE, in passing: a nationality, a language, a screen - a line about the game may mention them
+    { weight = -1, kind = "world", words = {
         "american", "americans", "british", "english", "scottish", "irish", "welsh", "french", "german",
         "germans", "spanish", "italian", "italians", "portuguese", "dutch", "belgian", "swedish", "swede",
         "swedes", "norwegian", "danish", "finnish", "polish", "russian", "russians", "greek", "turkish",
@@ -230,23 +252,24 @@ Terms.LISTS = {
 -- Things that are not words: a hyperlink is the strongest sign of all, a sum of gold nearly as strong,
 -- a web address the opposite. Patterns in Lua's own dialect, run on the lower-cased line.
 Terms.PATTERNS = {
-    { weight = 3, label = "link", pattern = "|h%[[^%]]+%]|h" },             -- an item, spell, quest, ... link
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*g%f[%W]" },         -- 50g, 5 g
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*k%f[%W]" },         -- 5k
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*gold%f[%W]" },      -- 50 gold
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*silver%f[%W]" },
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*s%f[%W]" },         -- 50s
-    { weight = 2, label = "gold", pattern = "%f[%w]%d+%s*c%f[%W]" },         -- 50c
-    { weight = 1, label = "count", pattern = "%f[%w]x%d+%f[%W]" },           -- x20
-    { weight = 1, label = "count", pattern = "%f[%w]%d+x%f[%W]" },           -- 20x
-    { weight = 1, label = "count", pattern = "%f[%w]%d+/%d+%f[%W]" },        -- 3/5 (a group forming)
-    { weight = 1, label = "level", pattern = "%f[%w]lvl?%s*%d+%f[%W]" },     -- lvl 40, lv40
-    { weight = 1, label = "level", pattern = "%f[%w]%d+%s*%-%s*%d+%f[%W]" }, -- 40-50
-    { weight = -1, label = "web", pattern = "https?://" },
-    { weight = -1, label = "web", pattern = "%f[%w]www%." },
-    { weight = -1, label = "web", pattern = "%.com%f[%W]" },
-    { weight = -1, label = "web", pattern = "%.gg%f[%W]" },
-    { weight = -1, label = "web", pattern = "%.tv%f[%W]" },
-    { weight = -1, label = "web", pattern = "%.net%f[%W]" },
-    { weight = -1, label = "web", pattern = "%.org%f[%W]" },
+    { weight = 3, kind = "talk", name = "a link", pattern = "|h%[[^%]]+%]|h" },   -- an item, spell, quest, ... link
+    { weight = 2, kind = "guilds", name = "a <guild>", pattern = "<[^<>]+>" },    -- a guild's name
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*g%f[%W]" },              -- 50g, 5 g
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*k%f[%W]" },              -- 5k
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*gold%f[%W]" },           -- 50 gold
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*silver%f[%W]" },
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*s%f[%W]" },              -- 50s
+    { weight = 2, kind = "trade", pattern = "%f[%w]%d+%s*c%f[%W]" },              -- 50c
+    { weight = 1, kind = "trade", pattern = "%f[%w]x%d+%f[%W]" },                 -- x20
+    { weight = 1, kind = "trade", pattern = "%f[%w]%d+x%f[%W]" },                 -- 20x
+    { weight = 1, kind = "groups", pattern = "%f[%w]%d+/%d+%f[%W]" },             -- 3/5 (a group forming)
+    { weight = 1, kind = "talk", pattern = "%f[%w]lvl?%s*%d+%f[%W]" },            -- lvl 40, lv40
+    { weight = 1, kind = "talk", pattern = "%f[%w]%d+%s*%-%s*%d+%f[%W]" },        -- 40-50
+    { weight = -1, kind = "world", pattern = "https?://" },
+    { weight = -1, kind = "world", pattern = "%f[%w]www%." },
+    { weight = -1, kind = "world", pattern = "%.com%f[%W]" },
+    { weight = -1, kind = "world", pattern = "%.gg%f[%W]" },
+    { weight = -1, kind = "world", pattern = "%.tv%f[%W]" },
+    { weight = -1, kind = "world", pattern = "%.net%f[%W]" },
+    { weight = -1, kind = "world", pattern = "%.org%f[%W]" },
 }

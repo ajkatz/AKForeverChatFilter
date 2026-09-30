@@ -81,12 +81,49 @@ function Filter.EntryById(id)
     return nil
 end
 
+-- Which kinds of line stay, as a table { trade = true, ... }. A setting saved by the first version
+-- ("strict" / "balanced") is read as its preset.
+function Filter.Shown()
+    local options = ns.cdb and ns.cdb.options
+    local kinds = options and options.kinds
+    if type(kinds) ~= "table" then
+        local preset = options and ns.Rules.PRESETS[options.mode]
+        kinds = preset or ns:GetOption("kinds")
+    end
+    return kinds
+end
+
+-- "trade" | "game" | "chat" | "custom": the preset the kinds match, if any
+function Filter.ModeName()
+    local shown = Filter.Shown()
+    for _, name in ipairs({ "trade", "game", "chat" }) do
+        local preset, same = ns.Rules.PRESETS[name], true
+        for kind, on in pairs(preset) do
+            if (shown[kind] == true) ~= on then
+                same = false
+            end
+        end
+        if same then
+            return name
+        end
+    end
+    return "custom"
+end
+
+local function setKinds(kinds)
+    local copy = {}
+    for kind, on in pairs(kinds) do
+        copy[kind] = on and true or false
+    end
+    ns:SetOption("kinds", copy)
+end
+
 -- The verdict for a line that reached the filter for the first time: scored, counted, logged, offered
 -- to the trainer.
 function Filter.Decide(kind, sender, text)
-    local mode = ns:GetOption("mode")
+    local mode = Filter.ModeName()
     local now = GetTime()
-    local verdict = ns.Rules.Verdict(text, mode, sender, now, ns:GetOption("sticky") ~= false)
+    local verdict = ns.Rules.Verdict(text, Filter.Shown(), sender, now, ns:GetOption("sticky") ~= false, ns:GetOption("answers") ~= false)
     local stats = Filter.stats
     stats.seen = stats.seen + 1
     if verdict.keep then
@@ -100,6 +137,7 @@ function Filter.Decide(kind, sender, text)
         who = type(sender) == "string" and sender or "?",
         text = text,
         keep = verdict.keep,
+        kind = verdict.kind,
         why = verdict.reason,
         score = verdict.score,
         mode = mode,
@@ -175,9 +213,32 @@ end)
 ------------------------------------------------------------------------
 -- Commands
 ------------------------------------------------------------------------
+local MODE_WORDS = {
+    trade = "trade (trade only)",
+    game = "game (everything about the game: trade, groups, guilds, questions, talk)",
+    chat = "chat (everything but the world outside)",
+}
+
+local function describeKinds()
+    local shown, on, off = Filter.Shown(), {}, {}
+    for _, kind in ipairs(ns.Rules.KINDS) do
+        if kind ~= "world" then
+            if shown[kind] then
+                on[#on + 1] = kind
+            else
+                off[#off + 1] = kind
+            end
+        end
+    end
+    return "shown: " .. (#on > 0 and table.concat(on, ", ") or "nothing") .. "; hidden: " .. (#off > 0 and table.concat(off, ", ") or "nothing") .. " - and the world outside, always"
+end
+
 local function describeMode()
-    local mode = ns:GetOption("mode")
-    return mode == "balanced" and "balanced (real-world talk goes, chatter stays)" or "strict (only game business stays)"
+    local mode = Filter.ModeName()
+    if mode == "custom" then
+        return "custom (" .. describeKinds() .. ")"
+    end
+    return MODE_WORDS[mode]
 end
 
 ns:RegisterCommand("on", "filter Trade chat (default)", function()
@@ -190,14 +251,52 @@ ns:RegisterCommand("off", "show every line again (the log and the training go on
     ns:Print("off - every line shows. |cffffd100/gtf on|r to filter again.")
 end)
 
-ns:RegisterCommand("mode", "'strict' (default): only game business stays; 'balanced': real-world talk goes, plain chatter stays", function(rest)
-    local mode = string.lower(rest or "")
-    if mode ~= "strict" and mode ~= "balanced" then
-        ns:Print("usage: /gtf mode strict | balanced   (now: " .. describeMode() .. ")")
+ns:RegisterCommand("mode", "'trade': trade only; 'game' (default): everything about the game - trade, groups forming, guilds, questions and their answers, talk; 'chat': everything but the world outside", function(rest)
+    local preset = ns.Rules.PRESETS[string.lower(rest or "")]
+    if not preset then
+        ns:Print("usage: /gtf mode trade | game | chat   (now: " .. describeMode() .. ")")
         return
     end
-    ns:SetOption("mode", mode)
+    setKinds(preset)
     ns:Print("mode: " .. describeMode() .. ".")
+end)
+
+local function toggleKind(rest, on)
+    local kind = string.lower(string.gsub(rest or "", "^%s+", ""))
+    kind = string.gsub(kind, "%s+$", "")
+    if kind == "world" or ns.Rules.PRESETS.game[kind] == nil then
+        ns:Print("usage: /gtf " .. (on and "show" or "hide") .. " trade | groups | guilds | questions | talk | chatter   (" .. describeKinds() .. ")")
+        return
+    end
+    local kinds = {}
+    for k, v in pairs(Filter.Shown()) do
+        kinds[k] = v
+    end
+    kinds[kind] = on
+    setKinds(kinds)
+    ns:Print(ns.Rules.KIND_WORDS[kind] .. ": " .. (on and "shown" or "hidden") .. ". Now " .. describeKinds() .. ".")
+end
+
+ns:RegisterCommand("show", "'/gtf show chatter': one kind of line back on - trade, groups, guilds, questions, talk, chatter", function(rest)
+    toggleKind(rest, true)
+end)
+
+ns:RegisterCommand("hide", "'/gtf hide guilds': one kind of line off - a guild recruiting is the usual one", function(rest)
+    toggleKind(rest, false)
+end)
+
+ns:RegisterCommand("kinds", "which kinds of line are shown and which are hidden", function()
+    ns:Print(describeKinds() .. ".")
+end)
+
+ns:RegisterCommand("answers", "'on' (default): chatter right after a game question, or naming somebody who just spoke about the game, counts as an answer (kind: questions); 'off': a line counts by its own words only", function(rest)
+    local word = string.lower(rest or "")
+    if word ~= "on" and word ~= "off" then
+        ns:Print("usage: /gtf answers on | off   (now: " .. (ns:GetOption("answers") ~= false and "on" or "off") .. ")")
+        return
+    end
+    ns:SetOption("answers", word == "on")
+    ns:Print("answers: " .. (word == "on" and "chatter after a game question is an answer." or "every line by its own words."))
 end)
 
 ns:RegisterCommand("general", "'on': filter the General channel as well; 'off' (default): Trade only", function(rest)
@@ -225,7 +324,7 @@ ns:RegisterCommand("test", "'/gtf test wts sword 50g': what the filter would do 
         ns:Print("usage: /gtf test <a line of chat>")
         return
     end
-    ns:Print(ns.Rules.Explain(rest, ns:GetOption("mode")))
+    ns:Print(ns.Rules.Explain(rest, Filter.Shown()))
 end)
 
 local function teach(rest, kind, said)

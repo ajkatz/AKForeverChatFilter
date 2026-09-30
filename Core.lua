@@ -161,7 +161,10 @@ end
 ------------------------------------------------------------------------
 local OPTION_DEFAULTS = {
     enabled = true,       -- the filter is on
-    mode = "strict",      -- "strict": only game business stays; "balanced": real-world talk goes, plain chatter stays
+    -- which kinds of line stay (the world outside never does): '/gtf mode trade|game|chat' sets them together,
+    -- '/gtf show <kind>' / '/gtf hide <kind>' one at a time
+    kinds = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = false },
+    answers = true,       -- chatter after a game question, or naming somebody who just spoke about the game, is an answer
     trade = true,         -- filter the Trade channel
     general = false,      -- ... and General
     sticky = true,        -- a sender's next lines follow a hidden real-world line for a while, unless clearly game business
