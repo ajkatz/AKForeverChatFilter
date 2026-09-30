@@ -2,9 +2,11 @@
 --
 -- TRAINING ('/gtf train on'): every line the filter decides on is put to you, one at a time, before you
 -- are told what the filter did - "Trade" or "Not trade"? Then the filter's own call and its reason come
--- up beside yours, and the score keeps count of how often the two agree. Your answers are saved with the
--- line (db.labels), which is what the next round of tuning is made from. '/gtf train unsure' asks only
--- about the lines the filter had nothing to go by.
+-- up beside yours, and the score keeps count of how often the two agree. When the two differ, a box asks
+-- for your reason: Enter saves it with the line, Next moves on without one ('/gtf note <text>' from chat
+-- does the same). Your answers and reasons are saved with the line (db.labels), which is what the next
+-- round of tuning is made from. '/gtf train unsure' asks only about the lines the filter had nothing to
+-- go by.
 --
 -- REVIEW ('/gtf review'): the lines that went, newest last, each with the reason; '/gtf review all' shows
 -- the kept ones too. A click on a line flags its verdict as wrong (a second click takes the flag back) -
@@ -33,6 +35,7 @@ local BACKDROP = {
 local window, page = nil, "train"
 local widgets = {}
 local queue, current, dropped = {}, nil, 0
+local awaiting -- the line you just answered differently from the filter, waiting for your reason
 
 -- a line as a chat window would show it, minus the links' innards (a link cannot sit inside another)
 function Trainer.Plain(text)
@@ -161,6 +164,36 @@ local function build()
     if type(w.feedback.SetWordWrap) == "function" then
         w.feedback:SetWordWrap(true)
     end
+    -- your reason, when the two of you differ
+    w.whyLabel = text(window, "GameFontHighlightSmall")
+    w.whyLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -262)
+    w.whyLabel:SetText("Why? Click the box, type, press Enter - or Next to move on.")
+    w.why = CreateFrame("EditBox", "AKForeverTradeFilterWhy", window, "InputBoxTemplate")
+    w.why:SetPoint("TOPLEFT", window, "TOPLEFT", PAD + 6, -278)
+    w.why:SetSize(WIDTH - 2 * PAD - 80, 22)
+    if type(w.why.SetAutoFocus) == "function" then
+        w.why:SetAutoFocus(false)
+    end
+    if type(w.why.SetMaxLetters) == "function" then
+        w.why:SetMaxLetters(200)
+    end
+    w.why:SetScript("OnEnterPressed", function(self)
+        local reason = self:GetText()
+        self:SetText("")
+        if type(self.ClearFocus) == "function" then
+            self:ClearFocus()
+        end
+        ns.SafeCall(Trainer.Note, Trainer, reason)
+    end)
+    w.why:SetScript("OnEscapePressed", function(self)
+        if type(self.ClearFocus) == "function" then
+            self:ClearFocus()
+        end
+    end)
+    w.next = button(window, "Next", 60, function()
+        Trainer:Note(nil)
+    end)
+    w.next:SetPoint("LEFT", w.why, "RIGHT", 8, 0)
     w.tally = text(window, "GameFontDisableSmall")
     w.tally:SetPoint("BOTTOMLEFT", window, "BOTTOMLEFT", PAD, 12)
     w.toReview = button(window, "Review", 80, function()
@@ -220,6 +253,7 @@ local function build()
 end
 
 local TRAIN_WIDGETS = { "meta", "message", "question", "trade", "notTrade", "skip", "feedback", "tally", "toReview" }
+local NOTE_WIDGETS = { "whyLabel", "why", "next" }
 local REVIEW_WIDGETS = { "list", "hint", "showAll", "showHidden", "toTrain" }
 
 local function showPage(name)
@@ -229,6 +263,9 @@ local function showPage(name)
     end
     for _, key in ipairs(REVIEW_WIDGETS) do
         widgets[key]:SetShown(name == "review")
+    end
+    for _, key in ipairs(NOTE_WIDGETS) do
+        widgets[key]:SetShown(name == "train" and awaiting ~= nil)
     end
 end
 
@@ -260,11 +297,14 @@ local function refreshTraining()
         w.question:SetText("")
     end
     for _, key in ipairs({ "trade", "notTrade", "skip" }) do
-        if current then
+        if current and not awaiting then
             w[key]:Enable()
         else
             w[key]:Disable()
         end
+    end
+    for _, key in ipairs(NOTE_WIDGETS) do
+        w[key]:SetShown(awaiting ~= nil)
     end
     w.tally:SetText(tally())
 end
@@ -306,7 +346,7 @@ local function recordLabel(entry, label)
     db.trainStats = db.trainStats or { asked = 0, agreed = 0 }
     local agree = (label == "trade") == (entry.keep == true)
     db.labels[#db.labels + 1] = {
-        t = entry.t, ch = entry.ch, who = entry.who, text = entry.text,
+        id = entry.id, t = entry.t, ch = entry.ch, who = entry.who, text = entry.text,
         keep = entry.keep, why = entry.why, score = entry.score, mode = entry.mode,
         label = label, agree = agree,
     }
@@ -323,23 +363,51 @@ local function recordLabel(entry, label)
 end
 
 function Trainer:Answer(label)
-    if not current then
+    if not current or awaiting then
         return
     end
     local entry = current
     local agree = recordLabel(entry, label)
     local w = widgets
+    ns:Log("label", { text = entry.text, keep = entry.keep, label = label, agree = agree })
     if agree then
         w.feedback:SetText("|cff60ff60Agreed.|r The filter " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why))
+        showNext()
     else
+        -- the line stays up, and the box asks why
         w.feedback:SetText("|cffff6060Not what the filter did:|r it " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why))
+        awaiting = entry
+        refreshTraining()
     end
-    ns:Log("label", { text = entry.text, keep = entry.keep, label = label, agree = agree })
+end
+
+-- Your reason for the line you answered differently - saved with the line and with your answer. nil or
+-- an empty text: none, and the next line comes up.
+function Trainer:Note(reason)
+    local entry = awaiting
+    if not entry then
+        return false
+    end
+    if type(reason) == "string" then
+        reason = string.gsub(reason, "^%s+", "")
+        reason = string.gsub(reason, "%s+$", "")
+    end
+    if type(reason) == "string" and reason ~= "" then
+        entry.note = reason
+        local labels = ns.db and ns.db.labels
+        if labels and labels[#labels] and labels[#labels].text == entry.text then
+            labels[#labels].note = reason
+        end
+        ns:Log("note", { text = entry.text, note = reason })
+        widgets.feedback:SetText("|cff60ff60Noted.|r " .. reason)
+    end
+    awaiting = nil
     showNext()
+    return true
 end
 
 function Trainer:Skip()
-    if not current then
+    if not current or awaiting then
         return
     end
     widgets.feedback:SetText("|cff808080Skipped.|r")
@@ -439,6 +507,7 @@ function Trainer:Describe()
         waiting = #queue,
         dropped = dropped,
         current = current and current.text or nil,
+        awaiting = awaiting and awaiting.text or nil,
         training = ns:GetOption("training"),
         tally = tally(),
     }
@@ -483,11 +552,30 @@ ns:RegisterCommand("review", "the lines that went, with the reason; '/gtf review
     Trainer:Show("review", what == "all" and "all" or "hidden")
 end)
 
+ns:RegisterCommand("note", "'/gtf note he was talking politics': your reason for the line you just answered differently from the filter", function(rest)
+    if Trainer:Note(rest) then
+        return
+    end
+    -- no line waiting: the note goes to your last answer
+    local labels = ns.db and ns.db.labels
+    local last = labels and labels[#labels]
+    if not last or not rest or rest == "" then
+        ns:Print("usage: /gtf note <your reason> - for the line you last answered in training.")
+        return
+    end
+    last.note = rest
+    local entry = ns.Filter.EntryById(last.id or -1)
+    if entry then
+        entry.note = rest
+    end
+    ns:Print("noted, on your last answer.")
+end)
+
 ns:RegisterCommand("clear", "forget the logged lines and your answers", function()
     if ns.db then
         ns.db.log, ns.db.labels, ns.db.trainStats = {}, {}, { asked = 0, agreed = 0 }
     end
-    queue, current, dropped = {}, nil, 0
+    queue, current, dropped, awaiting = {}, nil, 0, nil
     if window and window:IsShown() then
         Trainer:Show(page, Trainer.reviewing)
     end

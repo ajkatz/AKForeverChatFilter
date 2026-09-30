@@ -35,7 +35,7 @@ addons (a secret value) goes through untouched.
 | | |
 |---|---|
 | `/gtf review` | a window with the lines that went, newest last, each with its reason. `/gtf review all` shows the kept ones too. **Click a line to flag its verdict as wrong** (click again to take it back); the flag is saved with the line |
-| `/gtf train on` | **training**: every Trade line is put to you first - *Trade* or *Not trade*? - and only then the filter's own call and reason come up beside yours. The score keeps count of how often the two agree. `/gtf train unsure` asks only about the lines the filter had nothing to go by; `/gtf train off`, or close the window |
+| `/gtf train on` | **training**: every Trade line is put to you first - *Trade* or *Not trade*? - and only then the filter's own call and reason come up beside yours. The score keeps count of how often the two agree. When the two differ, a box asks for your reason: click it, type, Enter saves it with the line; *Next* moves on without one (`/gtf note <text>` from chat does the same). `/gtf train unsure` asks only about the lines the filter had nothing to go by; `/gtf train off`, or close the window |
 | `/gtf test <line>` | what the filter would do with that line, and every word that counted |
 | `/gtf allow <word>` / `/gtf block <word>` | teach a word (or a phrase): game business, or the world outside. Taught words outrank the built-in lists. `/gtf words` lists them, `/gtf unlearn <word>` forgets one |
 | `/gtf stats` | this session's count: seen, hidden, kept |

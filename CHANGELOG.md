@@ -14,7 +14,8 @@ For **World of Warcraft: Forever** (1.60.1, Interface 16001). The Great Trade Fi
   clearly game business.
 - Trade out of the box, General on request (`/gtf general on`); nothing else is touched.
 - **Training** (`/gtf train on`): every line is put to you first, then the filter's call comes up beside
-  yours; the score keeps count. **Review** (`/gtf review`): the lines that went, with reasons; a click flags
-  a verdict as wrong. `/gtf test`, `/gtf allow`, `/gtf block` for arguing with it.
+  yours; the score keeps count, and when the two differ a box takes your reason (`/gtf note <text>` from
+  chat does the same). **Review** (`/gtf review`): the lines that went, with reasons; a click flags a verdict
+  as wrong. `/gtf test`, `/gtf allow`, `/gtf block` for arguing with it.
 - The last 400 lines with their verdicts, your answers and flags live in the settings file, for tuning.
 - `/gtf diag` writes a report; the one you ask for is kept, the logout's goes beside it.

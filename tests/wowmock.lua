@@ -69,6 +69,11 @@ function methods.GetScript(self, name) return self.__scripts[name] end
 function methods.SetBackdrop(self, backdrop) self.__backdrop = backdrop end
 function methods.SetBackdropColor(self, r, g, b, a) self.__backdropColor = { r, g, b, a } end
 function methods.SetText(self, t) self.__text = t end
+function methods.SetAutoFocus(self, a) self.__autoFocus = a end
+function methods.SetMaxLetters(self, n) self.__maxLetters = n end
+function methods.SetFocus(self) self.__focused = true end
+function methods.ClearFocus(self) self.__focused = false end
+function methods.HasFocus(self) return self.__focused == true end
 function methods.GetText(self) return self.__text end
 function methods.SetJustifyH(self, j) self.__justify = j end
 function methods.SetJustifyV(self, j) self.__justifyV = j end
@@ -350,6 +355,15 @@ function Mock.click(button)
     local fn = button.__scripts.OnClick
     if fn then
         fn(button, "LeftButton")
+    end
+end
+
+-- type into an edit box and press Enter
+function Mock.enter(editBox, text)
+    editBox.__text = text
+    local fn = editBox.__scripts.OnEnterPressed
+    if fn then
+        fn(editBox)
     end
 end
 

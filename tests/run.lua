@@ -281,11 +281,40 @@ scenario("training: every line is put to you first, then the filter's call comes
     check(w.feedback:GetText():find("Not what the filter did", 1, true) and w.feedback:GetText():find("hid it", 1, true), w.feedback:GetText())
     equal(ns.db.labels[2].agree, false)
     check(w.tally:GetText():find("1 of 2", 1, true), w.tally:GetText())
+    -- the line stays up and the box asks why; nothing else can be answered meanwhile
+    check(w.message:GetText():find("trump", 1, true), "the line stays up for your reason")
+    equal(w.why:IsShown(), true); equal(w.next:IsShown(), true)
+    equal(w.trade:IsEnabled(), false); equal(w.skip:IsEnabled(), false)
+    equal(ns.Trainer:Describe().awaiting, "trump is the best")
+    Mock.click(w.trade)
+    equal(#ns.db.labels, 2, "no second answer while the box is up")
+    Mock.enter(w.why, "  he is a politician, but it was a joke about the game  ")
+    equal(ns.db.labels[2].note, "he is a politician, but it was a joke about the game", "your reason, tidied, on your answer")
+    equal(ns.db.log[2].note, ns.db.labels[2].note, "and on the line")
+    equal(w.why:IsShown(), false, "the box goes")
+    check(w.feedback:GetText():find("Noted", 1, true), w.feedback:GetText())
+    check(w.message:GetText():find("lol", 1, true), "and the next line is up")
+    equal(w.why:GetText(), "", "the box is empty for the next time")
 
     Mock.click(w.skip)
     check(w.feedback:GetText():find("Skipped", 1, true))
     equal(#ns.db.labels, 2, "a skip is no answer")
     check(w.message:GetText():find("waiting for the next line", 1, true))
+
+    -- a mismatch with no reason: Next moves on; '/gtf note' from chat lands on the last answer
+    Mock.chat({ text = "putin did nothing wrong", sender = "Fred" })
+    Mock.click(w.trade)
+    equal(ns.Trainer:Describe().awaiting, "putin did nothing wrong")
+    Mock.click(w.next)
+    equal(ns.Trainer:Describe().awaiting, nil); equal(ns.db.labels[3].note, nil, "no reason given")
+    SlashCmdList.AKFOREVERTRADEFILTER("note sarcasm, it was mocking him")
+    equal(ns.db.labels[3].note, "sarcasm, it was mocking him", "from chat, onto the last answer")
+    check(printed("noted, on your last answer"))
+    Mock.chat({ text = "obama was better", sender = "Fred" })
+    Mock.click(w.trade)
+    SlashCmdList.AKFOREVERTRADEFILTER("note same joke")
+    equal(ns.db.labels[4].note, "same joke", "from chat, onto the line waiting for a reason")
+    equal(ns.Trainer:Describe().awaiting, nil)
 
     -- your answer sits on the log entry too, for the review page
     equal(ns.db.log[2].label, "trade")
@@ -297,7 +326,7 @@ scenario("training: every line is put to you first, then the filter's call comes
     Mock.chat({ text = "hmm", sender = "Dan" })
     check(w.message:GetText():find("hmm", 1, true), "an unsure one is")
     Mock.click(w.notTrade)
-    equal(ns.db.labels[3].label, "not"); equal(ns.db.labels[3].agree, true)
+    local last = ns.db.labels[#ns.db.labels]; equal(last.label, "not"); equal(last.agree, true)
 
     -- more than fit in the queue: the oldest are let go
     SlashCmdList.AKFOREVERTRADEFILTER("train on")
@@ -341,7 +370,7 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
     equal(report.options.mode, "strict"); equal(report.filter.how, "ChatFrameUtil.AddMessageEventFilter")
     equal(report.filter.stats.seen, 3); equal(report.filter.stats.hidden, 2)
     equal(#report.log, 3); equal(report.log[2].why, "real-world talk: trump")
-    equal(#report.labels, 1); equal(report.labels[1].label, "not")
+    equal(#report.labels, 1); equal(report.labels[1].label, "not"); equal(report.labels[1].id, 3, "an answer knows its line")
     check(report.terms.builtIn > 1000, "the lists are counted")
     equal(report.trainer.training, "all")
 
