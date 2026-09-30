@@ -4,6 +4,7 @@
 ## Notes: Trade chat shows trade. A line stays when it looks like game business - item links, WTS/WTB/LF, gold, professions, dungeons, zones - and goes when it carries real-world talk; plain chatter goes too unless you ask to keep it. A review window shows what went and why, and a training mode asks you line by line and keeps score against the filter's own call.
 ## Author: Purrdee
 ## X-License: MIT
+## IconTexture: InterfaceAddOnsAKForeverTradeFiltericon
 ## SavedVariables: AKForeverTradeFilterDB
 ## OptionalDeps: AKForeverTradeFilter_SavedState
 
