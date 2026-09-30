@@ -17,6 +17,9 @@ For **World of Warcraft: Forever** (1.60.1, Interface 16001). Trade chat shows t
 - Every verdict says how sure it is - certain, sure, fairly sure, leaning on one word, nothing to go by, a
   guess from the conversation - and shows every word that counted with its weight, in the training window,
   the review window and `/gtf test`.
+- More to teach on a guess: when the filter was not sure, or when you differ, the line stays up with seven
+  buttons for which kind it really is, its words as tokens to click (left: game business, right: the world
+  outside - taught on the spot) and the box for your reason.
 - A country or a political figure named is a line gone, whatever else the line says; `US` in capitals
   counts, `us` the pronoun does not. A nationality only counts in passing, so a guild recruiting in French
   is still guild business.

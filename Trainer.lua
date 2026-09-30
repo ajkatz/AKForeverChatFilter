@@ -1,12 +1,14 @@
 -- Trainer: the window. Two pages.
 --
 -- TRAINING ('/gtf train on'): every line the filter decides on is put to you, one at a time, before you
--- are told what the filter did - "Trade" or "Not trade"? Then the filter's own call and its reason come
--- up beside yours, and the score keeps count of how often the two agree. When the two differ, a box asks
--- for your reason: Enter saves it with the line, Next moves on without one ('/gtf note <text>' from chat
--- does the same). Your answers and reasons are saved with the line (db.labels), which is what the next
--- round of tuning is made from. '/gtf train unsure' asks only about the lines the filter had nothing to
--- go by.
+-- are told what the filter did - "Trade" or "Not trade"? Then the filter's own call, its reason and how
+-- sure it was come up beside yours, and the score keeps count of how often the two agree. When the two
+-- differ, or when the filter was only guessing, the line stays up for more: which KIND it really is
+-- (seven buttons), the line's own words to click (left: game business, right: the world outside - taught
+-- on the spot), and a box for your reason (Enter saves it, '/gtf note <text>' from chat does the same);
+-- Next moves on. Your answers, kinds, taught words and reasons are saved with the line (db.labels),
+-- which is what the next round of tuning is made from. '/gtf train unsure' asks only about the lines the
+-- filter had nothing to go by.
 --
 -- REVIEW ('/gtf review'): the lines that went, newest last, each with the reason; '/gtf review all' shows
 -- the kept ones too. A click on a line flags its verdict as wrong (a second click takes the flag back) -
@@ -19,7 +21,7 @@ local _, ns = ...
 local Trainer = {}
 ns.Trainer = Trainer
 
-local WIDTH, HEIGHT, PAD = 480, 344, 12
+local WIDTH, HEIGHT, PAD = 480, 446, 12
 local QUEUE_MAX = 30    -- lines waiting to be asked about; older ones are let go
 local LABELS_MAX = 600  -- answers kept in the saved file
 local REVIEW_MAX = 300  -- lines the review page shows
@@ -166,10 +168,52 @@ local function build()
     end
     -- your reason, when the two of you differ
     w.whyLabel = text(window, "GameFontHighlightSmall")
-    w.whyLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -276)
+    w.whyLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -378)
     w.whyLabel:SetText("Why? Click the box, type, press Enter - or Next to move on.")
     w.why = CreateFrame("EditBox", "AKForeverTradeFilterWhy", window, "InputBoxTemplate")
-    w.why:SetPoint("TOPLEFT", window, "TOPLEFT", PAD + 6, -292)
+    w.why:SetPoint("TOPLEFT", window, "TOPLEFT", PAD + 6, -394)
+
+    -- teaching: which kind the line really is, and the words that should have decided
+    w.teachLabel = text(window, "GameFontHighlightSmall")
+    w.teachLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -276)
+    w.teachLabel:SetText("Which kind is it really?")
+    w.kindButtons = {}
+    local previous
+    for index, kind in ipairs({ "trade", "groups", "guilds", "questions", "talk", "chatter", "world" }) do
+        local b = button(window, kind == "questions" and "question" or kind, 62, function()
+            Trainer:TeachKind(kind)
+        end)
+        if previous then
+            b:SetPoint("LEFT", previous, "RIGHT", 2, 0)
+        else
+            b:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -292)
+        end
+        w.kindButtons[index] = b
+        previous = b
+    end
+    w.wordsHint = text(window, "GameFontDisableSmall")
+    w.wordsHint:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -318)
+    w.wordsHint:SetText("Click a word to make it game business, right-click for the world outside:")
+    w.words = CreateFrame("ScrollingMessageFrame", "AKForeverTradeFilterWords", window)
+    w.words:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -334)
+    w.words:SetPoint("TOPRIGHT", window, "TOPRIGHT", -PAD, -334)
+    w.words:SetHeight(38)
+    if type(w.words.SetFontObject) == "function" then
+        w.words:SetFontObject(ChatFontNormal or GameFontHighlightSmall)
+    end
+    w.words:SetJustifyH("LEFT")
+    if type(w.words.SetFading) == "function" then
+        w.words:SetFading(false)
+    end
+    if type(w.words.SetMaxLines) == "function" then
+        w.words:SetMaxLines(4)
+    end
+    if type(w.words.SetHyperlinksEnabled) == "function" then
+        w.words:SetHyperlinksEnabled(true)
+    end
+    w.words:SetScript("OnHyperlinkClick", function(_, link, _, mouseButton)
+        ns.SafeCall(Trainer.TeachWord, Trainer, link, mouseButton)
+    end)
     w.why:SetSize(WIDTH - 2 * PAD - 80, 22)
     if type(w.why.SetAutoFocus) == "function" then
         w.why:SetAutoFocus(false)
@@ -253,7 +297,7 @@ local function build()
 end
 
 local TRAIN_WIDGETS = { "meta", "message", "question", "trade", "notTrade", "skip", "feedback", "tally", "toReview" }
-local NOTE_WIDGETS = { "whyLabel", "why", "next" }
+local NOTE_WIDGETS = { "whyLabel", "why", "next", "teachLabel", "wordsHint", "words" }
 local REVIEW_WIDGETS = { "list", "hint", "showAll", "showHidden", "toTrain" }
 
 local function showPage(name)
@@ -266,6 +310,9 @@ local function showPage(name)
     end
     for _, key in ipairs(NOTE_WIDGETS) do
         widgets[key]:SetShown(name == "train" and awaiting ~= nil)
+    end
+    for _, b in ipairs(widgets.kindButtons or {}) do
+        b:SetShown(name == "train" and awaiting ~= nil)
     end
 end
 
@@ -330,7 +377,36 @@ local function refreshTraining()
     for _, key in ipairs(NOTE_WIDGETS) do
         w[key]:SetShown(awaiting ~= nil)
     end
+    for _, b in ipairs(w.kindButtons or {}) do
+        b:SetShown(awaiting ~= nil)
+    end
+    if awaiting then
+        Trainer:ShowWords(awaiting)
+    end
     w.tally:SetText(tally())
+end
+
+-- the line's own words as tokens to click; the ones that counted wear their sign
+function Trainer:ShowWords(entry)
+    local list = widgets.words
+    if not list then
+        return
+    end
+    if type(list.Clear) == "function" then
+        list:Clear()
+    end
+    local scored = ns.Rules.Score(entry.text or "")
+    local weightOf = {}
+    for _, h in ipairs(scored.hits) do
+        weightOf[h.term] = h.weight
+    end
+    local tokens = {}
+    for word in string.gmatch(ns.Rules.Normalize(entry.text or ""), "%S+") do
+        local weight = weightOf[word]
+        local colour = weight and (weight > 0 and "|cff60ff60" or "|cffff8080") or "|cffd0d0d0"
+        tokens[#tokens + 1] = "|Hgtfword:" .. word .. "|h" .. colour .. "[" .. word .. "]|r|h"
+    end
+    list:AddMessage(#tokens > 0 and table.concat(tokens, " ") or "|cff808080(no words)|r")
 end
 
 local function showNext()
@@ -396,15 +472,59 @@ function Trainer:Answer(label)
     ns:Log("label", { text = entry.text, keep = entry.keep, label = label, agree = agree })
     -- its call, its reason, how sure it was and on what
     local work = "|cff9d9d9d" .. tostring(entry.conf or "?") .. " - " .. tostring(entry.work or "") .. "|r"
-    if agree then
+    -- a guess, or a disagreement: the line stays up for more - a kind, a word, a reason
+    local guessed = type(entry.conf) == "string" and (string.find(entry.conf, "^a guess") or string.find(entry.conf, "^nothing to go by") or string.find(entry.conf, "^leaning")) ~= nil
+    if agree and not guessed then
         w.feedback:SetText("|cff60ff60Agreed.|r The filter " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why) .. "\n" .. work)
         showNext()
     else
-        -- the line stays up, and the box asks why
-        w.feedback:SetText("|cffff6060Not what the filter did:|r it " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why) .. "\n" .. work)
+        local head = agree and "|cff60ff60Agreed, but it was guessing.|r The filter " or "|cffff6060Not what the filter did:|r it "
+        w.feedback:SetText(head .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why) .. "\n" .. work)
         awaiting = entry
         refreshTraining()
     end
+end
+
+-- Which kind the line really is, in your eyes: saved with the line and your answer (data for the tuning)
+function Trainer:TeachKind(kind)
+    local entry = awaiting
+    if not entry then
+        return false
+    end
+    entry.kindByYou = kind
+    local labels = ns.db and ns.db.labels
+    if labels and labels[#labels] and labels[#labels].text == entry.text then
+        labels[#labels].kindByYou = kind
+    end
+    ns:Log("kind", { text = entry.text, kind = kind, filter = entry.kind })
+    widgets.feedback:SetText("|cff60ff60Noted:|r you call it " .. tostring(ns.Rules.KIND_WORDS[kind] or kind) .. "; the filter called it "
+        .. tostring(ns.Rules.KIND_WORDS[entry.kind] or entry.kind) .. ". A word to teach, a reason, or Next.")
+    return true
+end
+
+-- A word of the line, clicked: taught on the spot - left, game business; right, the world outside
+function Trainer:TeachWord(link, mouseButton)
+    local entry = awaiting
+    local word = string.match(tostring(link), "^gtfword:(.+)$")
+    if not entry or not word then
+        return false
+    end
+    local kind = (mouseButton == "RightButton") and "real" or "game"
+    if not ns.Filter.Teach(word, kind) then
+        return false
+    end
+    entry.taught = entry.taught or {}
+    entry.taught[#entry.taught + 1] = word .. "=" .. kind
+    local labels = ns.db and ns.db.labels
+    if labels and labels[#labels] and labels[#labels].text == entry.text then
+        labels[#labels].taught = entry.taught
+    end
+    -- what the line would score now, with the word taught
+    local verdict = ns.Rules.Verdict(entry.text, ns.Filter.Shown())
+    widgets.feedback:SetText("|cff60ff60Taught:|r '" .. word .. "' is " .. (kind == "game" and "game business" or "the world outside")
+        .. " from now on. This line would now be " .. (verdict.keep and "kept" or "hidden") .. " - " .. verdict.reason .. ".")
+    self:ShowWords(entry)
+    return true
 end
 
 -- Your reason for the line you answered differently - saved with the line and with your answer. nil or
@@ -531,6 +651,7 @@ function Trainer:Describe()
         built = window ~= nil,
         shown = window and window:IsShown() or false,
         page = page,
+        awaitingWhy = awaiting and (awaiting.conf or "?") or nil,
         waiting = #queue,
         dropped = dropped,
         current = current and current.text or nil,

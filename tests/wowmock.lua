@@ -367,10 +367,10 @@ function Mock.enter(editBox, text)
     end
 end
 
-function Mock.clickLink(frame, link)
+function Mock.clickLink(frame, link, mouseButton)
     local fn = frame.__scripts.OnHyperlinkClick
     if fn then
-        fn(frame, link, link, "LeftButton")
+        fn(frame, link, link, mouseButton or "LeftButton")
     end
 end
 

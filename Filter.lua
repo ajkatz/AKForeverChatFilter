@@ -329,17 +329,25 @@ ns:RegisterCommand("test", "'/gtf test wts sword 50g': what the filter would do 
     ns:Print(ns.Rules.Explain(rest, Filter.Shown()))
 end)
 
-local function teach(rest, kind, said)
-    local word = string.lower(string.gsub(rest or "", "^%s+", ""))
+-- Teach a word or a phrase: "game" (game business, +2) or "real" (the world outside, -3). From the
+-- commands and from the training window's word tokens alike.
+function Filter.Teach(word, kind)
+    word = string.lower(string.gsub(tostring(word or ""), "^%s+", ""))
     word = string.gsub(word, "%s+$", "")
     if word == "" or not ns.db then
-        ns:Print("usage: /gtf " .. said .. " <word or phrase>")
-        return
+        return false
     end
     ns.db.words[word] = kind
     ns.Rules.Rebuild(ns.db.words)
     ns:Log("taught", { word = word, kind = kind })
     ns:Print("'" .. word .. "' is " .. (kind == "game" and "game business" or "the world outside") .. " from now on.")
+    return word
+end
+
+local function teach(rest, kind, said)
+    if not Filter.Teach(rest, kind) then
+        ns:Print("usage: /gtf " .. said .. " <word or phrase>")
+    end
 end
 
 ns:RegisterCommand("allow", "'/gtf allow raid': that word means game business from now on", function(rest)
