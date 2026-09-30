@@ -164,7 +164,10 @@ local OPTION_DEFAULTS = {
     -- which kinds of line stay (the world outside never does): '/gtf mode trade|game|chat' sets them together,
     -- '/gtf show <kind>' / '/gtf hide <kind>' one at a time
     kinds = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = false },
-    answers = true,       -- chatter after a game question, or naming somebody who just spoke about the game, is an answer
+    -- OFF: the useful answers come by whisper, and what follows a question in Trade is mostly noise (the
+    -- user's call, 2026-09-30). On, chatter right after a game question, naming somebody who just spoke
+    -- about the game, or going on from the sender's own game line counts as game talk.
+    answers = false,
     trade = true,         -- filter the Trade channel
     general = false,      -- ... and General
     sticky = true,        -- a sender's next lines follow a hidden real-world line for a while, unless clearly game business

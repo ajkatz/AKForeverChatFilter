@@ -123,7 +123,7 @@ end
 function Filter.Decide(kind, sender, text)
     local mode = Filter.ModeName()
     local now = GetTime()
-    local verdict = ns.Rules.Verdict(text, Filter.Shown(), sender, now, ns:GetOption("sticky") ~= false, ns:GetOption("answers") ~= false)
+    local verdict = ns.Rules.Verdict(text, Filter.Shown(), sender, now, ns:GetOption("sticky") ~= false, ns:GetOption("answers") == true)
     local stats = Filter.stats
     stats.seen = stats.seen + 1
     if verdict.keep then
@@ -140,6 +140,8 @@ function Filter.Decide(kind, sender, text)
         kind = verdict.kind,
         why = verdict.reason,
         score = verdict.score,
+        conf = verdict.confidence,
+        work = verdict.work,
         mode = mode,
         sure = verdict.sure,
     })
@@ -289,10 +291,10 @@ ns:RegisterCommand("kinds", "which kinds of line are shown and which are hidden"
     ns:Print(describeKinds() .. ".")
 end)
 
-ns:RegisterCommand("answers", "'on' (default): chatter right after a game question, or naming somebody who just spoke about the game, counts as an answer (kind: questions); 'off': a line counts by its own words only", function(rest)
+ns:RegisterCommand("answers", "'off' (default): a line counts by its own words only; 'on': chatter right after a game question, or from somebody who just spoke about the game, counts as game talk", function(rest)
     local word = string.lower(rest or "")
     if word ~= "on" and word ~= "off" then
-        ns:Print("usage: /gtf answers on | off   (now: " .. (ns:GetOption("answers") ~= false and "on" or "off") .. ")")
+        ns:Print("usage: /gtf answers on | off   (now: " .. (ns:GetOption("answers") == true and "on" or "off") .. ")")
         return
     end
     ns:SetOption("answers", word == "on")

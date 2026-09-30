@@ -19,7 +19,7 @@ local _, ns = ...
 local Trainer = {}
 ns.Trainer = Trainer
 
-local WIDTH, HEIGHT, PAD = 480, 330, 12
+local WIDTH, HEIGHT, PAD = 480, 344, 12
 local QUEUE_MAX = 30    -- lines waiting to be asked about; older ones are let go
 local LABELS_MAX = 600  -- answers kept in the saved file
 local REVIEW_MAX = 300  -- lines the review page shows
@@ -159,17 +159,17 @@ local function build()
     w.feedback = text(window, "GameFontHighlightSmall")
     w.feedback:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -214)
     w.feedback:SetWidth(WIDTH - 2 * PAD)
-    w.feedback:SetHeight(44)
+    w.feedback:SetHeight(60)
     w.feedback:SetJustifyV("TOP")
     if type(w.feedback.SetWordWrap) == "function" then
         w.feedback:SetWordWrap(true)
     end
     -- your reason, when the two of you differ
     w.whyLabel = text(window, "GameFontHighlightSmall")
-    w.whyLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -262)
+    w.whyLabel:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -276)
     w.whyLabel:SetText("Why? Click the box, type, press Enter - or Next to move on.")
     w.why = CreateFrame("EditBox", "AKForeverTradeFilterWhy", window, "InputBoxTemplate")
-    w.why:SetPoint("TOPLEFT", window, "TOPLEFT", PAD + 6, -278)
+    w.why:SetPoint("TOPLEFT", window, "TOPLEFT", PAD + 6, -292)
     w.why:SetSize(WIDTH - 2 * PAD - 80, 22)
     if type(w.why.SetAutoFocus) == "function" then
         w.why:SetAutoFocus(false)
@@ -394,12 +394,14 @@ function Trainer:Answer(label)
     local agree = recordLabel(entry, label)
     local w = widgets
     ns:Log("label", { text = entry.text, keep = entry.keep, label = label, agree = agree })
+    -- its call, its reason, how sure it was and on what
+    local work = "|cff9d9d9d" .. tostring(entry.conf or "?") .. " - " .. tostring(entry.work or "") .. "|r"
     if agree then
-        w.feedback:SetText("|cff60ff60Agreed.|r The filter " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why))
+        w.feedback:SetText("|cff60ff60Agreed.|r The filter " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why) .. "\n" .. work)
         showNext()
     else
         -- the line stays up, and the box asks why
-        w.feedback:SetText("|cffff6060Not what the filter did:|r it " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why))
+        w.feedback:SetText("|cffff6060Not what the filter did:|r it " .. (entry.keep and "kept it" or "hid it") .. " - " .. tostring(entry.why) .. "\n" .. work)
         awaiting = entry
         refreshTraining()
     end
@@ -459,6 +461,7 @@ local function reviewLine(entry)
         mark = " |cff808080[you: " .. (entry.label == "trade" and "trade" or "not trade") .. "]|r"
     end
     local verdict = (entry.keep and "|cff60ff60kept|r" or "|cffff8080hidden|r") .. (entry.kind and (" " .. entry.kind) or "")
+        .. (entry.conf and (" |cff9d9d9d[" .. string.match(entry.conf, "^[^:]+") .. "]|r") or "")
     return string.format("|Hgtf:%d|h|cff808080[%s]|r %s: %s - %s, %s%s|h",
         entry.id or 0, stamp(entry.t), who, Trainer.Plain(entry.text), verdict, why, mark)
 end

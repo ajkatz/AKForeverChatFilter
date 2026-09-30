@@ -137,9 +137,16 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("raid this weekend?").keep, true, "the weekend is when raids happen: not a word of the world")
     equal(verdict("gg everyone", "chat").keep, true)
 
+    -- how sure, and on what
+    equal(verdict("WTS " .. SWORD .. " 50g pst").confidence, "sure")
+    check(verdict("WTS " .. SWORD .. " 50g pst").work:find("wts +2", 1, true) and verdict("WTS " .. SWORD .. " 50g pst").work:find("(score 10)", 1, true), verdict("WTS " .. SWORD .. " 50g pst").work)
+    equal(verdict("trump 2028").confidence, "certain: a loud word of the world outside is a hard pass")
+    equal(verdict("lf healer").confidence, "fairly sure")
+    equal(verdict("gnome is fun").confidence, "leaning, on one word")
+    equal(verdict("lol").confidence, "nothing to go by"); equal(verdict("lol").work, "no word of either side (score 0)")
     -- what '/gtf test' prints
     check(Rules.Explain("wts sword 50g"):find("^KEPT %(trade"), Rules.Explain("wts sword 50g"))
-    check(Rules.Explain("trump 2028"):find("^HIDDEN %(real%-world talk: trump; score %-3: trump %-3%)"), Rules.Explain("trump 2028"))
+    check(Rules.Explain("trump 2028"):find("^HIDDEN %(real%-world talk: trump; certain: a loud word of the world outside is a hard pass; trump %-3 %(score %-3%)%)"), Rules.Explain("trump 2028"))
 end)
 
 scenario("a thread: after a real-world line the same sender's chatter goes too, and a reply naming them, unless clearly game business", function()
@@ -183,25 +190,31 @@ scenario("a conversation about the game: the answers to a game question count as
     equal(verdict("Link please head from Leatherworking please", "Holly Boy", 20).kind, "talk")
     v = verdict("which one Holly", "Inyanis Ninyomae", 25)
     equal(v.keep, true); equal(v.reason, "a reply to Holly Boy", "named, whatever the timing")
-    -- the window: a minute, each answer buying half a minute more, six answers at most
-    equal(verdict("lol", "Someone Else", 58).keep, true, "the window is still open: a minute")
-    equal(verdict("ok", "Another One", 58 + 21).keep, false, "each answer buys twenty seconds, no more: closed now (for somebody who said nothing before)")
+    -- the window: three quarters of a minute, each answer buying fifteen seconds more, three answers at most
+    equal(verdict("lol", "Someone Else", 26).keep, false, "three answers is enough: the fourth is chatter")
+    equal(verdict("ok", "Another One", 26 + 16).keep, false, "and the window is closed anyway (for somebody who said nothing before)")
     equal(verdict("Does anyone want to do Wailing Caverns?", "Cbiscuit Lancer", 95).kind, "groups")
     equal(verdict("RIP Man City hahaha", "Maelor Cadarn", 97).keep, false, "a group forming gets its answers by whisper: no window")
     equal(verdict("holly which one", "Stranger Sam", 100).keep, false, "a name is written as a name: Forever's first names are common words")
     -- an answer that ends in a question mark opens no window of its own; a joke question opens none at all
     equal(verdict("where is the wc entrance", "Asker Askerson", 120).kind, "questions")
-    equal(verdict("?", "Puzzled Pete", 170).keep, true, "an answer, of sorts")
-    equal(verdict("nothing", "Someone Else", 205).keep, false, "the answer bought half a minute, not a window of its own")
+    equal(verdict("?", "Puzzled Pete", 150).keep, true, "an answer, of sorts")
+    equal(verdict("nothing", "Someone Else", 166).keep, false, "the answer bought fifteen seconds, not a window of its own")
     equal(verdict("did someone say " .. SWORD .. "?", "Meme Lord", 250).kind, "questions")
     equal(verdict("lol", "Someone Else", 252).keep, false, "a joke question seeks no answer: no window")
     equal(verdict("What would ya do for a " .. SWORD, "Meme Lord", 260).kind, "questions")
     equal(verdict("anything", "Someone Else", 262).keep, false, "a question with nothing but a link's name in it: no window either")
     equal(verdict("where is the rfd entrance", "Asker Askerson", 300).kind, "questions")
-    for index = 1, 4 do
+    for index = 1, 3 do
         equal(verdict("answer " .. index, "Helper " .. index, 300 + index).keep, true, "answer " .. index)
     end
-    equal(verdict("answer 5", "Helper 5", 305).keep, false, "four answers is enough")
+    equal(verdict("answer 4", "Helper 4", 304).keep, false, "three answers is enough")
+    -- an answer is short, or shares a word with the question
+    equal(verdict("anyone know when the level cap goes up?", "Asker Askerson", 350).kind, "questions")
+    v = verdict("anyone who says tomorrow is guessing", "Helper Hal", 352)
+    equal(v.keep, true, "six words, but 'anyone' is the question's"); equal(v.reason, "an answer after Asker Askerson's question")
+    equal(verdict("what is love tell me more", "Joker Joe", 353).keep, false, "six words of something else")
+    equal(verdict("cannibalistic humanoid underground dweller", "Joker Joe", 354).keep, true, "four words: short enough to be an answer, right or wrong")
     -- not with answers off, nor with questions hidden
     equal(verdict("where is the rfd entrance", "Asker Askerson", 400).kind, "questions")
     equal(Rules.Verdict("yes tomorrow", "game", "Shadow Seer", now + 402, true, false).keep, false, "answers off: chatter is chatter")
@@ -218,20 +231,25 @@ scenario("a conversation about the game: the answers to a game question count as
     equal(v.kind, "trade", "'auction house' makes it trade - and a question mark at the end makes it seek an answer")
     equal(verdict("correct, it is not", "Helper Hal", 705).reason, "an answer after Asker Askerson's question")
     equal(verdict("then why do i get stormwind mail", "Asker Askerson", 740).kind, "talk")
-    v = verdict("because it never has and never will", "Helper Hal", 765)
-    equal(v.keep, true); equal(v.kind, "talk"); equal(v.reason, "goes on from their own game line", "Hal answered a minute ago: part of the discussion")
+    v = verdict("because it never has and never will", "Helper Hal", 760)
+    equal(v.keep, true); equal(v.kind, "talk"); equal(v.reason, "goes on from their own game line", "Hal answered 55 seconds ago: part of the discussion")
+    equal(v.confidence, "a guess: the conversation, not the words")
     equal(verdict("back in the very old days, cities had their own individual auction houses, it is connected now", "Helper Hal", 800).kind, "trade", "an auction house in it: trade, and kept either way")
-    equal(verdict("thank the stars!", "Asker Askerson", 805).keep, true, "the asker goes on too")
+    equal(verdict("thank the stars!", "Asker Askerson", 795).keep, true, "the asker goes on too")
     equal(verdict("outrage man, anger is the only language they know so it just oozes out of every one of them", "Asker Askerson", 810).keep, false,
         "a speech is not a reply: eleven words or more stand on their own")
     equal(verdict("lol", "Bystander Bill", 806).keep, false, "somebody who said nothing about the game does not")
-    equal(verdict("what da hell", "Helper Hal", 800 + 121).keep, false, "two minutes on, it is chatter again")
+    equal(verdict("what da hell", "Helper Hal", 800 + 61).keep, false, "a minute on, it is chatter again")
     equal(Rules.Verdict("what da hell", "game", "Helper Hal", now + 810, true, false).keep, false, "answers off: chatter is chatter")
-    -- the same through the filter, with the real settings
+    -- the same through the filter, with the real settings: answers are OFF out of the box - they come by whisper
     Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
     equal(Mock.chat({ text = "south of the crossroads, in the mountain", sender = "Ben Benson" }), true, "kept by its words")
-    equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), true, "and the bare answer kept as one")
+    equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false, "the bare answer is chatter out of the box")
+    SlashCmdList.AKFOREVERTRADEFILTER("answers on")
+    Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
+    equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), true, "... and an answer when asked for")
     equal(lastLog(ns).kind, "questions")
+    equal(lastLog(ns).conf, "a guess: the conversation, not the words"); check(lastLog(ns).work:find("no word of either side", 1, true), lastLog(ns).work)
     SlashCmdList.AKFOREVERTRADEFILTER("answers off")
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false)
     SlashCmdList.AKFOREVERTRADEFILTER("hide questions")
@@ -320,7 +338,7 @@ scenario("only Trade is filtered out of the box; General when asked; every other
     SlashCmdList.AKFOREVERTRADEFILTER("stats")
     check(printed("hidden"), "the count is printed")
     SlashCmdList.AKFOREVERTRADEFILTER("test trump 2028")
-    check(printed("HIDDEN (real-world talk: trump"))
+    check(printed("HIDDEN (real-world talk: trump; certain"))
 end)
 
 scenario("the channel is known by its number, or failing that by its name", function()
@@ -357,6 +375,7 @@ scenario("the review window: the lines that went, with the reason; a click flags
     check(list.__messages[1]:find("Bob", 1, true) and list.__messages[1]:find("real-world talk: trump", 1, true), list.__messages[1])
     check(list.__messages[1]:find("|Hgtf:2|h", 1, true), "each line is a link to itself")
     check(list.__messages[1]:find("hidden|r world", 1, true), "the kind is shown: " .. list.__messages[1])
+    check(list.__messages[1]:find("[certain]", 1, true), "and how sure: " .. list.__messages[1])
     check(list.__messages[2]:find("chatter", 1, true))
     check(ns.Trainer.widgets.note:GetText():find("hidden lines, 2 shown", 1, true), ns.Trainer.widgets.note:GetText())
 
@@ -407,6 +426,7 @@ scenario("training: every line is put to you first, then the filter's call comes
 
     Mock.click(w.trade)
     check(w.feedback:GetText():find("Agreed", 1, true) and w.feedback:GetText():find("kept it", 1, true), w.feedback:GetText())
+    check(w.feedback:GetText():find("sure - ", 1, true) and w.feedback:GetText():find("wts +2", 1, true), "how sure, and on what: " .. w.feedback:GetText())
     equal(#ns.db.labels, 1); equal(ns.db.labels[1].label, "trade"); equal(ns.db.labels[1].agree, true)
     equal(ns.db.trainStats.asked, 1); equal(ns.db.trainStats.agreed, 1)
     check(w.message:GetText():find("trump", 1, true), "the next line is up")

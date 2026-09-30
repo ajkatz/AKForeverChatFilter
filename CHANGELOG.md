@@ -10,9 +10,13 @@ For **World of Warcraft: Forever** (1.60.1, Interface 16001). The Great Trade Fi
   groups forming, guilds, questions about the game (with their answers), other game talk, chatter, the
   world outside - and every kind but the world is a setting: `/gtf mode trade|game|chat` sets them
   together, `/gtf hide guilds` one at a time. Every verdict comes with its reason.
-- A conversation about the game: chatter within a minute of a game question is taken for an answer, a
-  line naming somebody who just spoke about the game for a reply, and chatter from somebody whose own last
-  line was about the game for the discussion going on (`/gtf answers off` turns that off).
+- A conversation about the game, off by default (`/gtf answers on`): chatter right after a game question
+  taken for an answer, a line naming somebody who just spoke about the game for a reply, chatter from
+  somebody whose own last line was about the game for the discussion going on. Off, because the useful
+  answers come by whisper and what follows a question in the channel is mostly noise.
+- Every verdict says how sure it is - certain, sure, fairly sure, leaning on one word, nothing to go by, a
+  guess from the conversation - and shows every word that counted with its weight, in the training window,
+  the review window and `/gtf test`.
 - A country or a political figure named is a line gone, whatever else the line says; `US` in capitals
   counts, `us` the pronoun does not. A nationality only counts in passing, so a guild recruiting in French
   is still guild business.

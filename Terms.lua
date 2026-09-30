@@ -229,7 +229,8 @@ Terms.LISTS = {
         -- the sexual and the political slang of this chat (from the training answers, 2026-09-30)
         "trans", "dick", "cock", "pussy", "porn", "nudes", "onlyfans", "horny", "chud", "chuds", "milady",
         "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
-        "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock",
+        "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock", "psyop", "psyops",
+        "beta male", "beta males", "thot", "thots", "white knight", "midterms", "hormuz",
         -- health, money and the rest of the outside
         "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
         "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
@@ -270,7 +271,8 @@ Terms.LISTS = {
         "hospital", "nurse", "surgery", "dentist", "flu", "fever", "headache", "diet", "gym", "workout",
         -- the economy and the wires, in passing
         "debt", "trillion", "billion", "dollar", "dollars", "internet", "spectrum", "isp", "wifi", "router",
-        "queer", "baddie", "straight guys", "boomer", "zoomer", "zoomers",
+        "queer", "baddie", "straight guys", "boomer", "zoomer", "zoomers", "gen x", "gen z", "millennial",
+        "millennials", "hamburgers", "hotdogs", "cigarettes", "cigs",
     } },
 }
 

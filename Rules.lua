@@ -22,9 +22,10 @@
 -- "/gtf hide guilds" takes one kind out.
 --
 -- A CONVERSATION. The answer to a game question rarely has a word of the game in it ("yes tomorrow"), so
--- short chatter within a minute of a question that seeks one ("anyone know ...", "where is ...", with a
--- word of the game in it) is taken for an answer - each answer keeps the window open twenty seconds
--- longer, four at most, and never opens a window of its own - and a line naming somebody who spoke about
+-- short chatter (four words, or eight sharing a word with the question) within three quarters of a
+-- minute of a question that seeks one ("anyone know ...", "where is ...", with a word of the game in it)
+-- is taken for an answer - each answer keeps the window open fifteen seconds longer, three at most, and
+-- never opens a window of its own - and a line naming somebody who spoke about
 -- the game in the last three minutes, written as a name (Holly, not holly: Forever's first names are
 -- common words), is taken for a reply. Both count as questions. And somebody whose line went for the
 -- world outside is likely to go on ("lol no he didn't"): for three minutes their chatter goes too, and so
@@ -42,12 +43,13 @@ local REASON_TERMS = 4      -- how many of the words are named in the reason
 local THREAD_SECONDS = 180  -- how long a real-world talker's chatter keeps going after one line went
 local THREAD_ESCAPE = 2     -- ... unless a line scores this much on the game's side: clearly game business
 local SPEAKER_SECONDS = 180 -- how long a name stays "somebody who just spoke"
-local GOES_ON_SECONDS = 120 -- chatter this soon after the sender's own game line goes on from it
-local GOES_ON_WORDS = 10    -- ... if it is short: a reply, not a speech
-local QUESTION_SECONDS = 60 -- chatter this soon after a game question is taken for an answer
-local ANSWER_SECONDS = 20   -- ... and each answer keeps the window open this much longer
-local ANSWERS_MAX = 4       -- ... for at most this many answers (the first real session: four real ones, then jokes)
-local ANSWER_WORDS = 8      -- an answer is a short line; a speech is not an answer
+local GOES_ON_SECONDS = 60  -- chatter this soon after the sender's own game line goes on from it
+local GOES_ON_WORDS = 8     -- ... if it is short: a reply, not a speech
+local QUESTION_SECONDS = 45 -- chatter this soon after a game question is taken for an answer
+local ANSWER_SECONDS = 15   -- ... and each answer keeps the window open this much longer
+local ANSWERS_MAX = 3       -- ... for at most this many answers (the first sessions: the real ones come first, then the jokes)
+local ANSWER_WORDS = 4      -- an answer is a short line ("tomorrow", "press K > General") ...
+local ANSWER_WORDS_TOPIC = 8 -- ... or a longer one that shares a word with the question
 
 Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" }
 Rules.PRESETS = {
@@ -283,6 +285,26 @@ local function wordCount(line)
     return count
 end
 
+-- the words of a question worth sharing: five letters or more, so that "the" and "does" are not a topic
+local function topicWords(text)
+    local set = {}
+    for _, word in ipairs(words(Rules.Normalize(text))) do
+        if #word >= 5 then
+            set[word] = true
+        end
+    end
+    return set
+end
+
+local function sharesTopic(question, line)
+    for _, word in ipairs(words(line)) do
+        if question.topic[word] then
+            return true
+        end
+    end
+    return false
+end
+
 local KIND_WORDS = { trade = "trade", groups = "a group forming", guilds = "guild business", questions = "a question about the game",
     talk = "game talk", chatter = "chatter", world = "the world outside" }
 Rules.KIND_WORDS = KIND_WORDS
@@ -334,7 +356,8 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
         elseif answers ~= false and speaker then
             kind, reason = "questions", "a reply to " .. speaker.sender
         elseif answers ~= false and question and now and now <= question.until_ and question.answers < ANSWERS_MAX
-            and wordCount(Rules.Normalize(text)) <= ANSWER_WORDS then
+            and (wordCount(Rules.Normalize(text)) <= ANSWER_WORDS
+                or (wordCount(Rules.Normalize(text)) <= ANSWER_WORDS_TOPIC and sharesTopic(question, Rules.Normalize(text)))) then
             kind, reason = "questions", "an answer after " .. question.sender .. "'s question"
             question.answers = question.answers + 1
             question.until_ = math.max(question.until_, now + ANSWER_SECONDS)
@@ -369,13 +392,35 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
             -- linked?" gets its answers in chat; a group forming gets them by whisper), and an answer never
             -- opens a window of its own
             if (kind == "questions" or kind == "trade") and Rules.SeeksAnswer(text) then
-                question = { sender = sender, at = now, until_ = now + QUESTION_SECONDS, answers = 0 }
+                question = { sender = sender, at = now, until_ = now + QUESTION_SECONDS, answers = 0, topic = topicWords(text) }
             end
         end
     end
     local keep = kind ~= "world" and shown[kind] == true
     if not keep and kind ~= "world" then
         reason = reason .. " (" .. kind .. " off)"
+    end
+    -- how sure, and why: the words with their weights, and what tipped it
+    local parts = {}
+    for _, h in ipairs(scored.hits) do
+        parts[#parts + 1] = h.term .. " " .. (h.weight > 0 and "+" or "") .. h.weight
+    end
+    local work = (#parts > 0 and table.concat(parts, ", ") or "no word of either side") .. " (score " .. score .. ")"
+    local confidence
+    if loud then
+        confidence = "certain: a loud word of the world outside is a hard pass"
+    elseif string.find(reason, "^goes on from a real%-world line") or string.find(reason, "who was talking about the world outside") then
+        confidence = "a guess: the sender or the name, not the words"
+    elseif string.find(reason, "^an answer after") or string.find(reason, "^a reply to") or string.find(reason, "^goes on from their own") then
+        confidence = "a guess: the conversation, not the words"
+    elseif math.abs(score) >= 4 then
+        confidence = "sure"
+    elseif math.abs(score) >= 2 then
+        confidence = "fairly sure"
+    elseif math.abs(score) == 1 then
+        confidence = "leaning, on one word"
+    else
+        confidence = "nothing to go by"
     end
     return {
         keep = keep,
@@ -384,16 +429,13 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
         score = score,
         hits = scored.hits,
         sure = sure,
+        confidence = confidence,
+        work = work,
     }
 end
 
 -- What '/gtf test <line>' prints
 function Rules.Explain(text, shown)
     local verdict = Rules.Verdict(text, shown or "game")
-    local parts = {}
-    for _, h in ipairs(verdict.hits) do
-        parts[#parts + 1] = h.term .. " " .. (h.weight > 0 and "+" or "") .. h.weight
-    end
-    return (verdict.keep and "KEPT" or "HIDDEN") .. " (" .. verdict.reason .. "; score " .. verdict.score
-        .. (#parts > 0 and ": " .. table.concat(parts, ", ") or "") .. ")"
+    return (verdict.keep and "KEPT" or "HIDDEN") .. " (" .. verdict.reason .. "; " .. verdict.confidence .. "; " .. verdict.work .. ")"
 end
