@@ -150,6 +150,15 @@ Terms.LISTS = {
         "quel'serrar", "windfury", "rockbiter", "flametongue", "frostbrand", "raptor", "wolf", "tiger", "kodo",
         "ram", "horse", "mechanostrider", "nightsaber", "epic mount", "riding", "mounted",
     } },
+    -- GOLD SELLERS: real money, a website, a delivery - a line gone whatever else it says (the user, 2026-09-30)
+    { weight = -3, kind = "seller", words = {
+        "paypal", "venmo", "cashapp", "cash app", "usd", "real money", "rmt", "discount", "coupon", "promo",
+        "promo code", "24/7", "fast delivery", "safe delivery", "instant delivery", "quick delivery",
+        "delivery time", "cheap gold", "cheapest gold", "buy gold", "buying gold", "sell gold", "selling gold",
+        "gold for sale", "wow gold", "gold shop", "gold store", "gold seller", "website", "livechat", "live chat",
+        "whatsapp", "telegram", "skype", "wechat", "per 100g", "per 1000g", "per 1k", "lowest price", "best price",
+        "trusted", "legit gold", "gold cheap", "power leveling", "powerleveling", "boosting service",
+    } },
     -- THE WORLD OUTSIDE, loud: politics, war, faith, the words no trade line needs
     { weight = -3, kind = "world", words = {
         -- people
@@ -169,6 +178,12 @@ Terms.LISTS = {
         "bannon", "stephen miller", "kushner", "ivanka", "melania", "hunter biden", "michelle obama", "walz",
         "tim walz", "whitmer", "pritzker", "hochul", "greg abbott", "youngkin", "noem", "ramaswamy", "vivek",
         "nikki haley", "huckabee", "king charles", "prince harry", "meghan markle", "royal family",
+        -- streamers and their screens: any direct talk of them (the user, 2026-09-30)
+        "asmon", "asmongold", "zackrawrr", "streamer", "streamers", "streaming", "stream", "streams", "twitch",
+        "twitch chat", "youtuber", "youtubers", "content creator", "influencer", "influencers", "xqc",
+        "sodapoppin", "esfand", "mizkif", "tyler1", "pirate software", "quin69", "guzu", "nmplol", "cdew",
+        "venruki", "swifty", "towelliee", "cohh", "cohhcarnage", "onlyfangs", "savix", "ziqo", "payo", "ahmpy",
+        "grubby", "kaif", "emiru", "pokelawls", "forsen", "kai cenat", "ishowspeed", "mrbeast", "mr beast",
         "alex jones", "jordan peterson", "andrew tate", "steven crowder", "crowder", "tim pool", "nick fuentes",
         "fuentes", "greta thunberg", "bill gates", "george floyd", "rittenhouse", "mangione", "diddy",
         "weinstein", "oprah", "kim jong un",
@@ -228,7 +243,7 @@ Terms.LISTS = {
         "bible", "quran", "koran", "pope", "vatican", "mormon", "mormons", "evangelical", "evangelicals",
         "racist", "racists", "racism", "sexist", "sexism", "misogynist", "misogyny", "transgender",
         "transphobic", "homophobic", "homophobe", "white people", "black people", "white supremacy",
-        "supremacist", "supremacists", "slavery", "colonialism",
+        "supremacist", "supremacists", "slavery", "colonialism", "youtube", "tiktok", "instagram",
         -- a crime story is the world's too
         "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedophiles", "pedo", "pedos",
         "paedophile", "paedophiles", "paedo", "paedos", "pedophilia", "pedofile", "pedofiles", "nonce", "nonces",
@@ -261,8 +276,8 @@ Terms.LISTS = {
         "arabic", "latino", "latinos", "hispanic", "hispanics", "texas", "texan", "california", "florida",
         "new york", "chicago", "london", "paris", "berlin", "toronto", "sydney",
         "cnn", "fox news", "foxnews", "msnbc", "nbc", "cbs", "bbc", "nytimes", "new york times",
-        "washington post", "breitbart", "infowars", "twitter", "tweet", "tweets", "tiktok", "instagram",
-        "facebook", "reddit", "youtube", "netflix", "spotify", "podcast", "podcasts", "nfl", "nba", "mlb",
+        "washington post", "breitbart", "infowars", "twitter", "tweet", "tweets",
+        "facebook", "reddit", "netflix", "spotify", "podcast", "podcasts", "nfl", "nba", "mlb",
         "nhl", "super bowl", "superbowl", "world cup", "olympics", "ufc", "wwe", "patriots", "taylor swift",
         "kardashian", "beyonce", "kanye", "eminem", "hollywood", "oscars", "grammys", "movie", "movies",
         "voted", "weather", "snowstorm", "hurricane", "earthquake", "wildfire", "wildfires", "flood",
@@ -317,13 +332,26 @@ Terms.PATTERNS = {
     { weight = 1, kind = "groups", pattern = "%f[%w]%d+/%d+%f[%W]" },             -- 3/5 (a group forming)
     { weight = 1, kind = "talk", pattern = "%f[%w]lvl?%s*%d+%f[%W]" },            -- lvl 40, lv40
     { weight = 1, kind = "talk", pattern = "%f[%w]%d+%s*%-%s*%d+%f[%W]" },        -- 40-50
-    { weight = -1, kind = "world", pattern = "https?://" },
-    { weight = -1, kind = "world", pattern = "%f[%w]www%." },
-    { weight = -1, kind = "world", pattern = "%.com%f[%W]" },
-    { weight = -1, kind = "world", pattern = "%.gg%f[%W]" },
-    { weight = -1, kind = "world", pattern = "%.tv%f[%W]" },
-    { weight = -1, kind = "world", pattern = "%.net%f[%W]" },
-    { weight = -1, kind = "world", pattern = "%.org%f[%W]" },
+    { weight = -3, kind = "seller", name = "a $ price", pattern = "%$%s*%d" },              -- $5
+    { weight = -3, kind = "seller", name = "a $ price", pattern = "%d%s*%$" },              -- 5$
+    { weight = -3, kind = "seller", name = "a price in euros", pattern = "%d%s*€" },
+    { weight = -3, kind = "seller", name = "a price in euros", pattern = "€%s*%d" },
+    -- a web address: a line gone, no other consideration (the user, 2026-09-30) - a Discord invite included
+    { weight = -3, kind = "web", name = "a web address", pattern = "https?://" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]www%." },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.com%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.gg%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.tv%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.net%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.org%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.io%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.xyz%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.info%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.shop%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.store%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.co%.uk%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.de%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]discord%.gg" },
 }
 
 -- A number that changes whenever the lists change: the training tally is kept per stamp, so that "we

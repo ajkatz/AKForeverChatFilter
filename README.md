@@ -24,8 +24,10 @@ a party, a country, a war, a faith, a screen. The words sort the line into one o
 | **chatter** | nothing of the game in it | `lol`, `thanks man` |
 | **world** | the world outside | a politician, a country, a war, a faith, a screen |
 
-The world outside never stays, and a loud word of it - a politician, a country, a war, a faith - is a
-hard pass whatever else the line says (`WTS [Sulfuras] 50g made in china` goes). Which of the other kinds
+The world outside never stays, and a loud word of it - a politician, a country, a war, a faith, a
+streamer - is a hard pass whatever else the line says (`WTS [Sulfuras] 50g made in china` goes). So is a
+web address of any kind, a Discord invite included, and so is a gold seller: real money, a delivery, a
+price in dollars. Which of the other kinds
 stay is a setting per kind:
 
 - `/gtf mode trade`: trade only.

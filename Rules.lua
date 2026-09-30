@@ -51,7 +51,7 @@ local ANSWERS_MAX = 3       -- ... for at most this many answers (the first sess
 local ANSWER_WORDS = 4      -- an answer is a short line ("tomorrow", "press K > General") ...
 local ANSWER_WORDS_TOPIC = 8 -- ... or a longer one that shares a word with the question
 
-Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" }
+Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" } -- (a gold seller's words count as "seller" and make the line world)
 Rules.PRESETS = {
     trade = { trade = true, groups = false, guilds = false, questions = false, talk = false, chatter = false },
     game = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = false },
@@ -340,7 +340,11 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     local score = scored.score
     local loud = scored.real <= -LOUD
     local kind, reason, sure = nil, nil, #scored.hits > 0
-    if loud then
+    if (scored.kinds.web or 0) <= -LOUD then
+        kind, reason = "world", "a web address"
+    elseif (scored.kinds.seller or 0) <= -LOUD then
+        kind, reason = "world", "a gold seller: " .. named(scored.hits, -1)
+    elseif loud then
         kind, reason = "world", "real-world talk: " .. named(scored.hits, -1)
     elseif score < 0 then
         kind, reason = "world", "the world outside: " .. named(scored.hits, -1)
@@ -411,7 +415,11 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     end
     local work = (#parts > 0 and table.concat(parts, ", ") or "no word of either side") .. " (score " .. score .. ")"
     local confidence
-    if loud then
+    if reason == "a web address" then
+        confidence = "certain: a web address is a hard pass"
+    elseif string.find(reason, "^a gold seller") then
+        confidence = "certain: a gold seller is a hard pass"
+    elseif loud then
         confidence = "certain: a loud word of the world outside is a hard pass"
     elseif string.find(reason, "^goes on from a real%-world line") or string.find(reason, "who was talking about the world outside") then
         confidence = "a guess: the sender or the name, not the words"
