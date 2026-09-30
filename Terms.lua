@@ -230,7 +230,8 @@ Terms.LISTS = {
         "trans", "dick", "cock", "pussy", "porn", "nudes", "onlyfans", "horny", "chud", "chuds", "milady",
         "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
         "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock", "psyop", "psyops",
-        "beta male", "beta males", "thot", "thots", "white knight", "midterms", "hormuz",
+        "beta male", "beta males", "thot", "thots", "white knight", "midterms", "hormuz", "sex", "sexual",
+        "gender", "genders", "pronouns", "furry", "furries", "bestiality", "ragebait", "rage bait", "troll bait",
         -- health, money and the rest of the outside
         "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
         "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
@@ -273,6 +274,12 @@ Terms.LISTS = {
         "debt", "trillion", "billion", "dollar", "dollars", "internet", "spectrum", "isp", "wifi", "router",
         "queer", "baddie", "straight guys", "boomer", "zoomer", "zoomers", "gen x", "gen z", "millennial",
         "millennials", "hamburgers", "hotdogs", "cigarettes", "cigs",
+        -- people, as the world outside talks about them (the user's call, 2026-09-30: "man", "woman", "boy",
+        -- "girl", "children" count against a line; "guys" and "bro" do not - too much of the game's own chat)
+        "man", "men", "woman", "women", "boy", "boys", "girl", "girls", "child", "children", "male", "female",
+        "males", "females", "mom", "dad", "mommy", "daddy", "parents", "family", "father", "mother",
+        "daughter", "sister", "gf", "bf", "femboy", "femboys", "fembois", "femboi", "betas", "tv", "costume",
+        "costumes", "trolling", "trolled", "hyperpop",
     } },
 }
 
