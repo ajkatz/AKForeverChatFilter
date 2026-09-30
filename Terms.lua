@@ -34,7 +34,8 @@ Terms.LISTS = {
     } },
     -- GROUPS: a group forming for a dungeon, a raid, a quest
     { weight = 2, kind = "groups", words = {
-        "lf", "lfm", "lfg", "lft", "lfh", "lfdps", "lf1m", "lf2m", "lf3m", "lf4m", "lf5m", "lfr", "need tank",
+        "lf", "lfm", "lfg", "lft", "lfh", "lfdps", "lf1m", "lf2m", "lf3m", "lf4m", "lf5m", "lfr", "looking for",
+        "send tell", "send a tell", "send me a tell", "please send tell", "need tank",
         "need a tank", "need healer", "need a healer", "need heals", "need dps", "need 1", "need 2", "need 3",
         "need one", "need two", "1 more", "2 more", "3 more", "one more", "two more", "forming", "spots open",
         "spot left", "spots left", "spot open", "full clear", "anyone want to do", "anyone wanna do",
@@ -73,6 +74,7 @@ Terms.LISTS = {
         "brd", "blackrock", "lbrs", "ubrs", "brs", "scholo", "scholomance", "strat", "stratholme", "dire maul",
         "dm east", "dm west", "dm north", "dm tribute", "tribute run", "mc", "molten core", "ony", "onyxia",
         "bwl", "blackwing", "zg", "zul'gurub", "zulgurub", "aq", "aq20", "aq40", "naxx", "naxxramas",
+        "ruins of lordaeron", "rol", "lordaeron",
         "dungeon", "dungeons", "instance", "instances", "raider", "raiders", "clears", "attune", "attuned",
         "attunement", "key", "keys", "keyed",
         -- zones and cities
@@ -82,7 +84,7 @@ Terms.LISTS = {
         "searing gorge", "burning steppes", "un'goro", "ungoro", "silithus", "winterspring", "plaguelands",
         "epl", "wpl", "felwood", "azshara", "swamp of sorrows", "blasted lands", "arathi", "alterac",
         "thousand needles", "dustwallow", "moonglade", "deadwind", "orgrimmar", "org", "thunder bluff", "tb",
-        "undercity", "uc", "stormwind", "sw", "ironforge", "darnassus", "darn", "gadgetzan", "gadget",
+        "undercity", "uc", "stormwind", "sw", "ironforge", "darnassus", "darn", "gadgetzan", "gadget", "gadetzan",
         "booty bay", "bb", "ratchet", "everlook", "crossroads", "xr", "tarren mill", "tm", "southshore",
         "astranaar", "taurajo", "brill", "goldshire", "kargath", "menethil", "theramore", "nethergarde",
         "cenarion hold", "light's hope", "andorhal", "feathermoon", "nijel's point", "thelsamar", "auberdine",
@@ -112,7 +114,8 @@ Terms.LISTS = {
         "realm", "realms", "layer", "layers", "queue", "queues", "login", "log in", "loggin", "logging", "logged",
         "fresh", "fresh start", "fresh server", "fresh realm", "turn it in", "hand it in", "hand in",
         "logout", "relog", "reload", "addon", "addons", "macro", "macros", "keybind", "ui", "dc",
-        "disconnect", "disconnected", "patch", "hotfix", "nerf", "nerfed", "stealth", "sap", "sheep",
+        "disconnect", "disconnected", "patch", "hotfix", "nerf", "nerfed", "bug", "bugs", "bugged", "report a bug",
+        "bug report", "beta", "stealth", "sap", "sheep",
         "polymorph", "fear", "cc", "kite", "kiting", "pull", "pulls", "pulled", "aggro", "threat", "taunt",
         "dot", "dots", "hots", "crit", "crits", "proc", "procs", "mana", "rage", "combo", "cooldown",
         "cooldowns", "cd", "cds", "gear", "geared", "gearing", "ilvl", "tier", "t1", "t2", "t3", "pre-bis",
@@ -214,6 +217,8 @@ Terms.LISTS = {
         "ukraine", "ukrainian", "ukrainians", "russia", "moscow", "israel", "israeli", "israelis", "gaza",
         "palestine", "palestinian", "palestinians", "hamas", "hezbollah", "iran", "iranian", "iranians",
         "tehran", "iraq", "syria", "afghanistan", "taliban", "isis", "al qaeda", "alqaeda", "china", "beijing",
+        "middle east", "the middle east", "west bank", "gaza strip", "golan", "kashmir", "crimea", "donbas", "balkans",
+        "far east", "third world", "global south", "the west", "western world", "eastern europe", "latin america",
         "ccp", "taiwan", "hong kong", "pyongyang", "genocide", "apartheid", "terrorist", "terrorists",
         "terrorism", "jihad", "jihadi", "war crimes", "holocaust", "ethnic cleansing", "shooting",
         "mass shooting",
@@ -231,7 +236,7 @@ Terms.LISTS = {
         "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
         "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock", "psyop", "psyops",
         "beta male", "beta males", "thot", "thots", "white knight", "midterms", "hormuz", "sex", "sexual",
-        "gender", "genders", "pronouns", "furry", "furries", "bestiality", "ragebait", "rage bait", "troll bait",
+        "furry", "furries", "bestiality", "ragebait", "rage bait", "troll bait", "indoctrination", "indoctrinated",
         -- health, money and the rest of the outside
         "covid", "corona", "coronavirus", "vaccine", "vaccines", "vaccinated", "vax", "vaxx", "vaxxed",
         "antivax", "anti-vax", "antivaxx", "pandemic", "fauci", "cdc", "climate change", "global warming",
@@ -280,6 +285,10 @@ Terms.LISTS = {
         "males", "females", "mom", "dad", "mommy", "daddy", "parents", "family", "father", "mother",
         "daughter", "sister", "gf", "bf", "femboy", "femboys", "fembois", "femboi", "betas", "tv", "costume",
         "costumes", "trolling", "trolled", "hyperpop",
+        -- the mind and its care, a real-life thing (the user, 2026-09-30: "therapy")
+        "therapy", "therapist", "meds", "medication", "depression", "depressed", "anxiety", "adhd", "autism",
+        "autistic", "mental health", "mental illness", "asylum", "psychiatrist", "psych ward", "trauma",
+        "gender", "genders", "pronouns",
     } },
 }
 
