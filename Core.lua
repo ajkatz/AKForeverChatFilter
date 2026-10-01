@@ -156,8 +156,8 @@ end
 ------------------------------------------------------------------------
 -- Saved variables: ONE account-wide table, per-character options under db.chars["Name - Realm"].
 -- One file is what lets the beta workaround (tools/Install-SavedStateBridge.ps1) restore it should
--- the client write SavedVariables and not read them back. The log, the labels and the words you teach
--- are account-wide: what is trade is trade on every character.
+-- the client write SavedVariables and not read them back. The log and the words you teach are
+-- account-wide: what is trade is trade on every character.
 ------------------------------------------------------------------------
 local OPTION_DEFAULTS = {
     enabled = true,       -- the filter is on
@@ -171,7 +171,6 @@ local OPTION_DEFAULTS = {
     trade = true,         -- filter the Trade channel
     general = false,      -- ... and General
     sticky = true,        -- a sender's next lines follow a hidden real-world line for a while, unless clearly game business
-    training = "off",     -- "off" | "all" (every line is asked) | "unsure" (only the lines the filter is not sure about)
 }
 
 -- The realm is squeezed ("Classic Beta PvE" -> "ClassicBetaPvE"): on a fresh login UnitFullName has no
@@ -211,7 +210,6 @@ local function initDB()
     db.loads = (db.loads or 0) + 1
     db.chars = db.chars or {}
     db.log = db.log or {}       -- every line the filter saw, with its verdict (Filter.lua)
-    db.labels = db.labels or {} -- the lines you answered in training, with your call (Trainer.lua)
     db.words = db.words or {}   -- the words you taught: [word] = "game" | "real"
 
     local key = characterKey()

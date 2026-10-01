@@ -248,7 +248,7 @@ Terms.LISTS = {
         "murder", "murdered", "murderer", "strangled", "strangle", "pedophile", "pedophiles", "pedo", "pedos",
         "paedophile", "paedophiles", "paedo", "paedos", "pedophilia", "pedofile", "pedofiles", "nonce", "nonces",
         "rapist", "rapists", "molested", "molester",
-        -- the sexual and the political slang of this chat (from the training answers, 2026-09-30)
+        -- the sexual and the political slang of this chat (heard in Trade, 2026-09-30)
         "trans", "dick", "cock", "pussy", "porn", "nudes", "onlyfans", "horny", "chud", "chuds", "milady",
         "miladies", "petro dollar", "petrodollar", "libtards", "trannies", "tranny", "groomer", "groomers",
         "culture war", "culture wars", "billionaire", "billionaires", "billionares", "gock", "psyop", "psyops",
@@ -354,26 +354,3 @@ Terms.PATTERNS = {
     { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]discord%.gg" },
 }
 
--- A number that changes whenever the lists change: the training tally is kept per stamp, so that "we
--- agreed on N of M" means since the last tuning, not since the beginning of time.
-function Terms.Stamp()
-    local sum = 7
-    local function add(text)
-        for index = 1, #text do
-            sum = (sum * 31 + string.byte(text, index)) % 2147483647
-        end
-    end
-    for _, list in ipairs(Terms.LISTS) do
-        add(tostring(list.weight) .. tostring(list.kind))
-        for _, word in ipairs(list.words) do
-            add(word)
-        end
-    end
-    for _, entry in ipairs(Terms.PATTERNS) do
-        add(tostring(entry.weight) .. tostring(entry.kind) .. entry.pattern)
-    end
-    for _, neutral in ipairs(Terms.NEUTRAL or {}) do
-        add(neutral)
-    end
-    return sum
-end

@@ -1,6 +1,6 @@
 -- Diagnostics: '/gtf diag' writes a report into the saved file - the options, the counts, how the filter
--- was registered, the last lines with their verdicts, your answers from training, every error. Nothing
--- in it is a frame; every value is checked before it is copied so that a secret cannot poison the file.
+-- was registered, the last lines with their verdicts, every error. Nothing in it is a frame; every value
+-- is checked before it is copied so that a secret cannot poison the file.
 local _, ns = ...
 
 local Diagnostics = {}
@@ -66,17 +66,12 @@ function Diagnostics:Collect()
         savedVariableLoads = db.loads,
         options = {
             enabled = ns:GetOption("enabled"), mode = ns.Filter.ModeName(), kinds = ns.Filter.Shown(), trade = ns:GetOption("trade"),
-            general = ns:GetOption("general"), sticky = ns:GetOption("sticky"), training = ns:GetOption("training"),
-            answers = ns:GetOption("answers"),
+            general = ns:GetOption("general"), sticky = ns:GetOption("sticky"), answers = ns:GetOption("answers"),
         },
         filter = { how = ns.Filter.how, stats = ns.Filter.stats },
         terms = { builtIn = termCount, patterns = #ns.Terms.PATTERNS, taught = taught, words = db.words },
-        trainer = ns.Trainer:Describe(),
-        trainStats = db.trainStats,
-        trainHistory = db.trainHistory,
-        stamp = ns.Terms.Stamp(),
+        review = ns.Review:Describe(),
         log = tail(db.log or {}, LOG_LINES),
-        labels = db.labels,
         errors = {},
         unknownEvents = ns.unknownEvents,
         session = ns.sessionLog,

@@ -325,13 +325,14 @@ local function business(kinds)
     return best
 end
 
--- The verdict for one line: { keep = bool, kind, reason, score, hits, sure }.
+-- The verdict for one line: { keep = bool, kind, reason, score, hits, work }.
 --   shown   which kinds stay: a table { trade = true, ... } or a preset's name ("trade" | "game" | "chat")
 --   sender  who said it (for the conversation), or nil
 --   now     the time, seconds, or nil
 --   sticky  whether the thread rule is on (default on)
 --   answers whether chatter after a game question, or naming a game speaker, counts as one (default on)
--- `sure` is false when the line had nothing of its own to go by: the ones a trainer asks about.
+-- `work` names every word that counted with its weight, and the score: what '/gtf test' and a click in
+-- the review window show.
 function Rules.Verdict(text, shown, sender, now, sticky, answers)
     if type(shown) ~= "table" then
         shown = Rules.PRESETS[shown or "game"] or Rules.PRESETS.game
@@ -339,7 +340,7 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     local scored = Rules.Score(text)
     local score = scored.score
     local loud = scored.real <= -LOUD
-    local kind, reason, sure = nil, nil, #scored.hits > 0
+    local kind, reason
     if (scored.kinds.web or 0) <= -LOUD then
         kind, reason = "world", "a web address"
     elseif (scored.kinds.seller or 0) <= -LOUD then
@@ -408,40 +409,18 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     if not keep and kind ~= "world" then
         reason = reason .. " (" .. kind .. " off)"
     end
-    -- how sure, and why: the words with their weights, and what tipped it
+    -- the words with their weights, and the score
     local parts = {}
     for _, h in ipairs(scored.hits) do
         parts[#parts + 1] = h.term .. " " .. (h.weight > 0 and "+" or "") .. h.weight
     end
     local work = (#parts > 0 and table.concat(parts, ", ") or "no word of either side") .. " (score " .. score .. ")"
-    local confidence
-    if reason == "a web address" then
-        confidence = "certain: a web address is a hard pass"
-    elseif string.find(reason, "^a gold seller") then
-        confidence = "certain: a gold seller is a hard pass"
-    elseif loud then
-        confidence = "certain: a loud word of the world outside is a hard pass"
-    elseif string.find(reason, "^goes on from a real%-world line") or string.find(reason, "who was talking about the world outside") then
-        confidence = "a guess: the sender or the name, not the words"
-    elseif string.find(reason, "^an answer after") or string.find(reason, "^a reply to") or string.find(reason, "^goes on from their own") then
-        confidence = "a guess: the conversation, not the words"
-    elseif math.abs(score) >= 4 then
-        confidence = "sure"
-    elseif math.abs(score) >= 2 then
-        confidence = "fairly sure"
-    elseif math.abs(score) == 1 then
-        confidence = "leaning, on one word"
-    else
-        confidence = "nothing to go by"
-    end
     return {
         keep = keep,
         kind = kind,
         reason = reason,
         score = score,
         hits = scored.hits,
-        sure = sure,
-        confidence = confidence,
         work = work,
     }
 end
@@ -449,5 +428,5 @@ end
 -- What '/gtf test <line>' prints
 function Rules.Explain(text, shown)
     local verdict = Rules.Verdict(text, shown or "game")
-    return (verdict.keep and "KEPT" or "HIDDEN") .. " (" .. verdict.reason .. "; " .. verdict.confidence .. "; " .. verdict.work .. ")"
+    return (verdict.keep and "KEPT" or "HIDDEN") .. " (" .. verdict.reason .. "; " .. verdict.work .. ")"
 end

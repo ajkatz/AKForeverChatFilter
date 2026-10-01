@@ -3,8 +3,7 @@
 -- Blizzard's is hooked or rewritten, no chat window is touched.
 --
 -- Every line the filter decides on is kept in the saved file with its verdict and reason (db.log, the
--- last few hundred): that is what the review window shows, what '/gtf diag' carries, and what the
--- training mode asks about - the learning loop lives on it.
+-- last few hundred): that is what the review window shows and what '/gtf diag' carries.
 --
 -- One line reaches EVERY chat window that shows its channel, so the callback runs once per window for
 -- the same line; the verdict is remembered by the line's id and given again, without a second entry.
@@ -19,7 +18,7 @@ local RECENT_MAX = 80   -- line ids whose verdict is remembered
 -- Blizzard's own numbers for the city channels (zoneChannelID); the name is the fallback
 local ZONE_CHANNELS = { [1] = "general", [2] = "trade" }
 
-Filter.stats = { seen = 0, hidden = 0, kept = 0, events = 0, secret = 0 }
+Filter.stats = { seen = 0, hidden = 0, kept = 0, secret = 0 }
 Filter.how = "not registered yet"
 
 local recent, recentOrder = {}, {}
@@ -118,10 +117,8 @@ local function setKinds(kinds)
     ns:SetOption("kinds", copy)
 end
 
--- The verdict for a line that reached the filter for the first time: scored, counted, logged, offered
--- to the trainer.
+-- The verdict for a line that reached the filter for the first time: scored, counted, logged.
 function Filter.Decide(kind, sender, text)
-    local mode = Filter.ModeName()
     local now = GetTime()
     local verdict = ns.Rules.Verdict(text, Filter.Shown(), sender, now, ns:GetOption("sticky") ~= false, ns:GetOption("answers") == true)
     local stats = Filter.stats
@@ -140,12 +137,8 @@ function Filter.Decide(kind, sender, text)
         kind = verdict.kind,
         why = verdict.reason,
         score = verdict.score,
-        conf = verdict.confidence,
         work = verdict.work,
-        mode = mode,
-        sure = verdict.sure,
     })
-    ns:Fire("LINE", entry, verdict)
     return verdict
 end
 
@@ -203,15 +196,6 @@ ns:Listen("LOGIN", function()
     register()
 end)
 
--- the raw events, counted beside the filter's calls: if the filter is never called for lines the event
--- delivers, the client kept the line's text from us
-ns:On("CHAT_MSG_CHANNEL", function(_, text)
-    Filter.stats.events = Filter.stats.events + 1
-    if ns.IsSecret(text) then
-        Filter.stats.secretEvents = (Filter.stats.secretEvents or 0) + 1
-    end
-end)
-
 ------------------------------------------------------------------------
 -- Commands
 ------------------------------------------------------------------------
@@ -248,7 +232,7 @@ ns:RegisterCommand("on", "filter Trade chat (default)", function()
     ns:Print("on - " .. describeMode() .. ".")
 end)
 
-ns:RegisterCommand("off", "show every line again (the log and the training go on)", function()
+ns:RegisterCommand("off", "show every line again (the log goes on)", function()
     ns:SetOption("enabled", false)
     ns:Print("off - every line shows. |cffffd100/gtf on|r to filter again.")
 end)
@@ -329,8 +313,7 @@ ns:RegisterCommand("test", "'/gtf test wts sword 50g': what the filter would do 
     ns:Print(ns.Rules.Explain(rest, Filter.Shown()))
 end)
 
--- Teach a word or a phrase: "game" (game business, +2) or "real" (the world outside, -3). From the
--- commands and from the training window's word tokens alike.
+-- Teach a word or a phrase: "game" (game business, +2) or "real" (the world outside, -3).
 function Filter.Teach(word, kind)
     word = string.lower(string.gsub(tostring(word or ""), "^%s+", ""))
     word = string.gsub(word, "%s+$", "")
@@ -381,6 +364,6 @@ end)
 
 ns:RegisterCommand("stats", "this session's count: lines seen, hidden, kept", function()
     local s = Filter.stats
-    ns:Print(string.format("this session: %d line(s) seen, %d hidden, %d kept; %d channel event(s), %d unreadable. Filter: %s. Mode: %s.",
-        s.seen, s.hidden, s.kept, s.events, s.secret, Filter.how, describeMode()))
+    ns:Print(string.format("this session: %d line(s) seen, %d hidden, %d kept, %d unreadable. Filter: %s. Mode: %s.",
+        s.seen, s.hidden, s.kept, s.secret, Filter.how, describeMode()))
 end)

@@ -78,7 +78,7 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("did someone say " .. SWORD .. "?").kind, "questions", "a link alone is not trade")
     equal(verdict("anyone else think trump is doing great").kind, "world")
     equal(verdict("anyone else think trump is doing great").reason, "real-world talk: trump")
-    equal(verdict("lol").kind, "chatter"); equal(verdict("lol").reason, "chatter (chatter off)"); equal(verdict("lol").sure, false, "nothing to go by")
+    equal(verdict("lol").kind, "chatter"); equal(verdict("lol").reason, "chatter (chatter off)")
     equal(verdict("anyone else lagging?").kind, "questions", "lag is the game's")
 
     -- the presets
@@ -117,7 +117,6 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("go to therapy").keep, false)
     v = verdict("Cheap gold! 5$ per 100g, fast delivery, whisper me")
     equal(v.kind, "world", "a gold seller is a hard pass, whatever the trade words say"); check(v.reason:find("^a gold seller: "), v.reason)
-    equal(v.confidence, "certain: a gold seller is a hard pass")
     equal(verdict("wts 1000g, paypal only").kind, "world")
     v = verdict("<Forever Bound> recruiting, join discord.gg/abc123 for a spot in MC")
     equal(v.kind, "world", "a web address is a hard pass, guild ad or not"); equal(v.reason, "a web address")
@@ -172,16 +171,12 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("raid this weekend?").keep, true, "the weekend is when raids happen: not a word of the world")
     equal(verdict("gg everyone", "chat").keep, true)
 
-    -- how sure, and on what
-    equal(verdict("WTS " .. SWORD .. " 50g pst").confidence, "sure")
+    -- the words that counted, with their weights
     check(verdict("WTS " .. SWORD .. " 50g pst").work:find("wts +2", 1, true) and verdict("WTS " .. SWORD .. " 50g pst").work:find("(score 10)", 1, true), verdict("WTS " .. SWORD .. " 50g pst").work)
-    equal(verdict("trump 2028").confidence, "certain: a loud word of the world outside is a hard pass")
-    equal(verdict("lf healer").confidence, "fairly sure")
-    equal(verdict("gnome is fun").confidence, "leaning, on one word")
-    equal(verdict("lol").confidence, "nothing to go by"); equal(verdict("lol").work, "no word of either side (score 0)")
+    equal(verdict("lol").work, "no word of either side (score 0)")
     -- what '/gtf test' prints
     check(Rules.Explain("wts sword 50g"):find("^KEPT %(trade"), Rules.Explain("wts sword 50g"))
-    check(Rules.Explain("trump 2028"):find("^HIDDEN %(real%-world talk: trump; certain: a loud word of the world outside is a hard pass; trump %-3 %(score %-3%)%)"), Rules.Explain("trump 2028"))
+    equal(Rules.Explain("trump 2028"), "HIDDEN (real-world talk: trump; trump -3 (score -3))")
 end)
 
 scenario("a thread: after a real-world line the same sender's chatter goes too, and a reply naming them, unless clearly game business", function()
@@ -218,7 +213,7 @@ scenario("a conversation about the game: the answers to a game question count as
     -- the first real session, as it went
     equal(verdict("anyone know if they are gonna up the level?", "Firemoon Night", 0).kind, "questions")
     local v = verdict("yes tomorrow", "Shadow Seer", 5)
-    equal(v.keep, true, "an answer"); equal(v.kind, "questions"); equal(v.reason, "an answer after Firemoon Night's question"); equal(v.sure, false, "a guess, for the trainer")
+    equal(v.keep, true, "an answer"); equal(v.kind, "questions"); equal(v.reason, "an answer after Firemoon Night's question")
     equal(verdict("i think tomorrow no?", "Gaga Prime", 8).keep, true)
     equal(verdict("yes", "Perdition Eversorrow", 12).keep, true)
     equal(verdict("my mandated union break is over, gotta go back to work now", "Lightbringer Nictalope", 13).keep, false, "a speech is no answer")
@@ -268,7 +263,6 @@ scenario("a conversation about the game: the answers to a game question count as
     equal(verdict("then why do i get stormwind mail", "Asker Askerson", 740).kind, "talk")
     v = verdict("because it never has and never will", "Helper Hal", 760)
     equal(v.keep, true); equal(v.kind, "talk"); equal(v.reason, "goes on from their own game line", "Hal answered 55 seconds ago: part of the discussion")
-    equal(v.confidence, "a guess: the conversation, not the words")
     equal(verdict("back in the very old days, cities had their own individual auction houses, it is connected now", "Helper Hal", 800).kind, "trade", "an auction house in it: trade, and kept either way")
     equal(verdict("thank the stars!", "Asker Askerson", 795).keep, true, "the asker goes on too")
     equal(verdict("outrage man, anger is the only language they know so it just oozes out of every one of them", "Asker Askerson", 810).keep, false,
@@ -283,8 +277,7 @@ scenario("a conversation about the game: the answers to a game question count as
     SlashCmdList.AKFOREVERTRADEFILTER("answers on")
     Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), true, "... and an answer when asked for")
-    equal(lastLog(ns).kind, "questions")
-    equal(lastLog(ns).conf, "a guess: the conversation, not the words"); check(lastLog(ns).work:find("no word of either side", 1, true), lastLog(ns).work)
+    equal(lastLog(ns).kind, "questions"); check(lastLog(ns).work:find("no word of either side", 1, true), lastLog(ns).work)
     SlashCmdList.AKFOREVERTRADEFILTER("answers off")
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false)
     SlashCmdList.AKFOREVERTRADEFILTER("hide questions")
@@ -367,13 +360,12 @@ scenario("only Trade is filtered out of the box; General when asked; every other
 
     -- unreadable: hands off, and counted
     equal(Mock.chat({ text = "trump is the best", secret = "text" }), true, "a secret line goes through untouched")
-    equal(ns.Filter.stats.secretEvents, 1, "the event saw it")
     equal(Mock.chat({ text = "trump is the best", secret = "sender" }), true)
 
     SlashCmdList.AKFOREVERTRADEFILTER("stats")
     check(printed("hidden"), "the count is printed")
     SlashCmdList.AKFOREVERTRADEFILTER("test trump 2028")
-    check(printed("HIDDEN (real-world talk: trump; certain"))
+    check(printed("HIDDEN (real-world talk: trump; trump -3 (score -3))"))
 end)
 
 scenario("the channel is known by its number, or failing that by its name", function()
@@ -397,7 +389,7 @@ scenario("a client with the older filter API, and one with none at all", functio
     equal(Mock.chat({ text = "trump is the best" }), true, "and every line shows")
 end)
 
-scenario("the review window: the lines that went, with the reason; a click flags a verdict as wrong", function()
+scenario("the review window: the lines that went, with the reason; a click prints the words that counted", function()
     local ns = start()
     Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Alice" })
     Mock.chat({ text = "trump is the best", sender = "Bob" })
@@ -405,25 +397,23 @@ scenario("the review window: the lines that went, with the reason; a click flags
     SlashCmdList.AKFOREVERTRADEFILTER("review")
     local window, list = AKForeverTradeFilterWindow, AKForeverTradeFilterReview
     check(window and window:IsShown(), "the window is up")
-    equal(ns.Trainer:Describe().page, "review")
+    equal(ns.Review:Describe().showing, "hidden")
     equal(#list.__messages, 2, "the two hidden lines")
     check(list.__messages[1]:find("Bob", 1, true) and list.__messages[1]:find("real-world talk: trump", 1, true), list.__messages[1])
     check(list.__messages[1]:find("|Hgtf:2|h", 1, true), "each line is a link to itself")
     check(list.__messages[1]:find("hidden|r world", 1, true), "the kind is shown: " .. list.__messages[1])
-    check(list.__messages[1]:find("[certain]", 1, true), "and how sure: " .. list.__messages[1])
     check(list.__messages[2]:find("chatter", 1, true))
-    check(ns.Trainer.widgets.note:GetText():find("hidden lines, 2 shown", 1, true), ns.Trainer.widgets.note:GetText())
+    check(ns.Review.widgets.note:GetText():find("hidden lines, 2 shown", 1, true), ns.Review.widgets.note:GetText())
 
     SlashCmdList.AKFOREVERTRADEFILTER("review all")
     equal(#list.__messages, 3, "every line")
     check(list.__messages[1]:find("[Gloves of Old]", 1, true) and not list.__messages[1]:find("Hitem", 1, true), "an item link is shown by its name only: " .. list.__messages[1])
     check(list.__messages[1]:find("kept", 1, true))
 
+    -- a click: the verdict, the reason and the words that counted, printed to chat
     Mock.clickLink(list, "gtf:2")
-    equal(ns.Filter.EntryById(2).flag, "wrong", "flagged")
-    check(list.__messages[2]:find("[flagged wrong]", 1, true), "and shown as such")
-    Mock.clickLink(list, "gtf:2")
-    equal(ns.Filter.EntryById(2).flag, nil, "a second click takes it back")
+    check(printed("hidden - real-world talk: trump; trump -3 (score -3)"), "the words that counted")
+    check(printed("/gtf block <word>|r teaches one"))
     Mock.clickLink(list, "gtf:999")
     Mock.clickLink(list, "item:2296")
 
@@ -433,159 +423,20 @@ scenario("the review window: the lines that went, with the reason; a click flags
     window:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 40, -60)
     window.__scripts.OnDragStop(window)
     equal(ns.cdb.options.window.x, 40)
-    SlashCmdList.AKFOREVERTRADEFILTER("reset")
-    equal(ns.cdb.options.window, nil)
+    Mock.click(ns.Review.widgets.close)
+    equal(window:IsShown(), false)
 
+    SlashCmdList.AKFOREVERTRADEFILTER("review")
     SlashCmdList.AKFOREVERTRADEFILTER("clear")
     equal(#ns.db.log, 0)
-    equal(#list.__messages, 1); check(list.__messages[1]:find("nothing seen yet", 1, true))
-end)
-
-scenario("training: every line is put to you first, then the filter's call comes up beside yours, and the score keeps count", function()
-    local ns = start()
-    SlashCmdList.AKFOREVERTRADEFILTER("train on")
-    equal(ns:GetOption("training"), "all")
-    local w = ns.Trainer.widgets
-    equal(ns.Trainer:Describe().page, "train")
-    check(w.message:GetText():find("waiting for the next line", 1, true))
-    equal(w.trade:IsEnabled(), false, "nothing to answer yet")
-
-    Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Alice" })
-    Mock.chat({ text = "trump is the best", sender = "Bob" })
-    Mock.chat({ text = "lol", sender = "Carl" })
-    check(w.message:GetText():find("[Gloves of Old]", 1, true), "the first line is up, links by their name: " .. w.message:GetText())
-    check(w.meta:GetText():find("Alice", 1, true) and w.meta:GetText():find("Trade", 1, true), w.meta:GetText())
-    check(w.note:GetText():find("2 waiting", 1, true), w.note:GetText())
-    equal(w.trade:IsEnabled(), true)
-    check(not w.feedback:GetText() or w.feedback:GetText() == "", "nothing said yet")
-
-    Mock.click(w.trade)
-    check(w.feedback:GetText():find("Agreed", 1, true) and w.feedback:GetText():find("kept it", 1, true), w.feedback:GetText())
-    check(w.feedback:GetText():find("sure - ", 1, true) and w.feedback:GetText():find("wts +2", 1, true), "how sure, and on what: " .. w.feedback:GetText())
-    equal(#ns.db.labels, 1); equal(ns.db.labels[1].label, "trade"); equal(ns.db.labels[1].agree, true)
-    equal(ns.db.trainStats.asked, 1); equal(ns.db.trainStats.agreed, 1)
-    check(w.message:GetText():find("trump", 1, true), "the next line is up")
-
-    Mock.click(w.trade) -- you would have kept the politics: a disagreement
-    check(w.feedback:GetText():find("Not what the filter did", 1, true) and w.feedback:GetText():find("hid it", 1, true), w.feedback:GetText())
-    equal(ns.db.labels[2].agree, false)
-    check(w.tally:GetText():find("1 of 2", 1, true), w.tally:GetText())
-    equal(ns.db.trainStats.stamp, ns.Terms.Stamp(), "the tally belongs to this set of rules")
-    -- the line stays up and the box asks why; nothing else can be answered meanwhile
-    check(w.message:GetText():find("trump", 1, true), "the line stays up for your reason")
-    equal(w.why:IsShown(), true); equal(w.next:IsShown(), true)
-    equal(w.trade:IsEnabled(), false); equal(w.skip:IsEnabled(), false)
-    equal(ns.Trainer:Describe().awaiting, "trump is the best")
-    Mock.click(w.trade)
-    equal(#ns.db.labels, 2, "no second answer while the box is up")
-    Mock.enter(w.why, "  he is a politician, but it was a joke about the game  ")
-    equal(ns.db.labels[2].note, "he is a politician, but it was a joke about the game", "your reason, tidied, on your answer")
-    equal(ns.db.log[2].note, ns.db.labels[2].note, "and on the line")
-    equal(w.why:IsShown(), false, "the box goes")
-    check(w.feedback:GetText():find("Noted", 1, true), w.feedback:GetText())
-    check(w.message:GetText():find("lol", 1, true), "and the next line is up")
-    equal(w.why:GetText(), "", "the box is empty for the next time")
-
-    Mock.click(w.skip)
-    check(w.feedback:GetText():find("Skipped", 1, true))
-    equal(#ns.db.labels, 2, "a skip is no answer")
-    check(w.message:GetText():find("waiting for the next line", 1, true))
-
-    -- a line the filter was only guessing about stays up even when you agree: a kind, a word, a reason
-    Mock.chat({ text = "gnome is fun on the other side", sender = "Gnomey Gnomerson" })
-    Mock.click(w.trade)
-    check(w.feedback:GetText():find("Agreed, but it was guessing", 1, true), w.feedback:GetText())
-    equal(ns.Trainer:Describe().awaiting, "gnome is fun on the other side")
-    check(w.kindButtons[5]:IsShown() and w.words:IsShown(), "the teaching row is up")
-    check(w.words.__messages[1]:find("|Hgtfword:gnome|h|cff60ff60[gnome]|r|h", 1, true), "the words as tokens, the one that counted in green: " .. w.words.__messages[1])
-    Mock.click(w.kindButtons[5]) -- "talk"
-    equal(ns.db.labels[#ns.db.labels].kindByYou, "talk", "your kind on your answer")
-    check(w.feedback:GetText():find("you call it game talk", 1, true), w.feedback:GetText())
-    Mock.clickLink(w.words, "gtfword:side", "RightButton")
-    equal(ns.db.words["side"], "real", "a right-click teaches the world outside")
-    check(w.feedback:GetText():find("would now be hidden", 1, true), w.feedback:GetText())
-    equal(ns.db.labels[#ns.db.labels].taught[1], "side=real")
-    check(w.words.__messages[1]:find("|cffff8080[side]", 1, true), "and the token turns red")
-    Mock.clickLink(w.words, "gtfword:gnome")
-    equal(ns.db.words["gnome"], "game", "a left-click teaches game business")
-    Mock.enter(w.why, "a gnome joke, harmless")
-    equal(ns.db.labels[#ns.db.labels].note, "a gnome joke, harmless")
-    equal(ns.Trainer:Describe().awaiting, nil, "and on to the next line")
-    SlashCmdList.AKFOREVERTRADEFILTER("unlearn side")
-    SlashCmdList.AKFOREVERTRADEFILTER("unlearn gnome")
-    -- a sure line you agree on moves straight on
-    Mock.chat({ text = "WTS " .. SWORD .. " 50g", sender = "Alice" })
-    Mock.click(w.trade)
-    equal(ns.Trainer:Describe().awaiting, nil, "sure and agreed: nothing more to ask")
-
-    -- a mismatch with no reason: Next moves on; '/gtf note' from chat lands on the last answer
-    Mock.chat({ text = "putin did nothing wrong", sender = "Fred" })
-    Mock.click(w.trade)
-    equal(ns.Trainer:Describe().awaiting, "putin did nothing wrong")
-    Mock.click(w.next)
-    equal(ns.Trainer:Describe().awaiting, nil); equal(ns.db.labels[#ns.db.labels].note, nil, "no reason given")
-    SlashCmdList.AKFOREVERTRADEFILTER("note sarcasm, it was mocking him")
-    equal(ns.db.labels[#ns.db.labels].note, "sarcasm, it was mocking him", "from chat, onto the last answer")
-    check(printed("noted, on your last answer"))
-    Mock.chat({ text = "obama was better", sender = "Fred" })
-    Mock.click(w.trade)
-    SlashCmdList.AKFOREVERTRADEFILTER("note same joke")
-    equal(ns.db.labels[#ns.db.labels].note, "same joke", "from chat, onto the line waiting for a reason")
-    equal(ns.Trainer:Describe().awaiting, nil)
-
-    -- your answer sits on the log entry too, for the review page
-    equal(ns.db.log[2].label, "trade")
-
-    -- 'unsure': only the lines the filter had nothing to go by
-    SlashCmdList.AKFOREVERTRADEFILTER("train unsure")
-    Mock.chat({ text = "wts " .. SWORD, sender = "Alice" })
-    check(w.message:GetText():find("waiting", 1, true), "a sure line is not asked about")
-    Mock.chat({ text = "hmm", sender = "Dan" })
-    check(w.message:GetText():find("hmm", 1, true), "an unsure one is")
-    Mock.click(w.notTrade)
-    local last = ns.db.labels[#ns.db.labels]; equal(last.label, "not"); equal(last.agree, true)
-
-    -- more than fit in the queue: the oldest are let go
-    SlashCmdList.AKFOREVERTRADEFILTER("train on")
-    for index = 1, 40 do
-        Mock.chat({ text = "line " .. index, sender = "Eve" })
-    end
-    check(w.note:GetText():find("30 waiting", 1, true) and w.note:GetText():find("let go", 1, true), w.note:GetText())
-
-    -- closing the window ends the training
-    Mock.click(w.close)
-    equal(ns:GetOption("training"), "off")
-    equal(AKForeverTradeFilterWindow:IsShown(), false)
-    check(printed("training off"))
-    Mock.chat({ text = "line 41", sender = "Eve" })
-    equal(#ns.db.log > 0, true, "the filter goes on")
-
-    -- training comes back next session
-    SlashCmdList.AKFOREVERTRADEFILTER("train on")
-    local db = AKForeverTradeFilterDB
-    ns = start({ db = db })
-    equal(ns.Trainer:Describe().shown, true, "the window is up again")
-    equal(ns.Trainer:Describe().page, "train")
-    SlashCmdList.AKFOREVERTRADEFILTER("train off")
-    check(printed("we agreed on"))
-
-    -- the rules change: the tally so far is put aside and a new one starts
-    local asked = ns.db.trainStats.asked
-    check(asked > 0)
-    ns.db.trainStats.stamp = ns.db.trainStats.stamp + 1 -- (as a changed Terms.lua would)
-    SlashCmdList.AKFOREVERTRADEFILTER("train on")
-    equal(ns.db.trainStats.asked, 0, "a fresh count"); equal(ns.db.trainStats.stamp, ns.Terms.Stamp())
-    equal(ns.db.trainHistory[1].asked, asked, "the old count is kept aside")
-    check(ns.Trainer.widgets.tally:GetText():find("since the last tuning", 1, true), ns.Trainer.widgets.tally:GetText())
+    equal(#list.__messages, 1); check(list.__messages[1]:find("nothing hidden yet", 1, true))
 end)
 
 scenario("diagnostics and logout run; the report is SavedVariables-safe and holds no frame", function()
     local ns = start()
     Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Alice" })
     Mock.chat({ text = "trump is the best", sender = "Bob" })
-    SlashCmdList.AKFOREVERTRADEFILTER("train on")
-    Mock.chat({ text = "hmm", sender = "Dan" })
-    Mock.click(ns.Trainer.widgets.notTrade)
+    SlashCmdList.AKFOREVERTRADEFILTER("review")
     SlashCmdList.AKFOREVERTRADEFILTER("diag")
     check(printed("report saved"))
     Mock.fire("PLAYER_LOGOUT")
@@ -594,11 +445,10 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
     equal(report.asked, true); check(AKForeverTradeFilterDB.diagAtLogout, "the logout's report goes beside it")
     equal(report.addonVersion, "0.1.0-test")
     equal(report.options.mode, "game"); equal(report.options.kinds.guilds, true); equal(report.filter.how, "ChatFrameUtil.AddMessageEventFilter")
-    equal(report.filter.stats.seen, 3); equal(report.filter.stats.hidden, 2)
-    equal(#report.log, 3); equal(report.log[2].why, "real-world talk: trump")
-    equal(#report.labels, 1); equal(report.labels[1].label, "not"); equal(report.labels[1].id, 3, "an answer knows its line")
+    equal(report.filter.stats.seen, 2); equal(report.filter.stats.hidden, 1)
+    equal(#report.log, 2); equal(report.log[2].why, "real-world talk: trump"); equal(report.log[2].work, "trump -3 (score -3)")
     check(report.terms.builtIn > 1000, "the lists are counted")
-    equal(report.trainer.training, "all")
+    equal(report.review.shown, true); equal(report.review.showing, "hidden")
 
     local function walk(value, path)
         local kind = type(value)

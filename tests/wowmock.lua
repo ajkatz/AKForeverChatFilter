@@ -259,7 +259,7 @@ function Mock.install(options)
             _G[key] = value
         end,
     })
-    for _, file in ipairs({ "Core.lua", "Terms.lua", "Rules.lua", "Filter.lua", "Trainer.lua", "Diagnostics.lua" }) do
+    for _, file in ipairs({ "Core.lua", "Terms.lua", "Rules.lua", "Filter.lua", "Review.lua", "Diagnostics.lua" }) do
         local chunk, err = loadfile(root .. "/" .. file, "t", gameEnv)
         if not chunk then
             error(err)

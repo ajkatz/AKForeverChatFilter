@@ -6,9 +6,8 @@ Every line of Trade is scored by the words in it: an item link, WTS/WTB/LF, a su
 
 - `/gtf mode trade` shows trade only; `/gtf mode game` (default) everything about the game; `/gtf mode chat` everything but the world outside. `/gtf hide guilds` takes one kind out.
 - A country or a political figure named is a line gone, whatever else the line says. So is any web address, a gold seller, and any talk of streamers.
-- `/gtf review`: the lines that went, each with its reason and how sure the filter was. Click a line to flag its verdict as wrong.
-- `/gtf train on`: every line is put to you first - Trade or not? - then the filter's call comes up beside yours with its confidence and every word that counted; the score keeps count. When it was only guessing, teach it: which kind the line really is, and which word should have decided.
-- `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word.
+- `/gtf review`: the lines that went, each with its kind and its reason. Click a line and it is printed to chat with every word that counted and its weight.
+- `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word; taught words outrank the lists.
 
 Trade is filtered out of the box; `/gtf general on` adds General. Nothing is rewritten: the client's own message event filter hands each line over, the addon says "skip it" or nothing. A line the client keeps from addons goes through untouched.
 
