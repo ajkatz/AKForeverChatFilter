@@ -5,6 +5,13 @@
 - **Renamed to AKForeverChatFilter** - it was AKForeverTradeFilter, and it stopped being about Trade alone.
   The folder is new: delete the old `AKForeverTradeFilter` folder in `Interface\AddOns`. Settings start
   afresh (`/gtf allow` and `/gtf block` teach the words again); `/gtf` stays, `/acf` is new.
+- **Settings follow the character.** Client build 1.60.1.70170 (Oct 1 2026) moved a character's surname
+  into the realm slot of `UnitName`, which gave the per-character settings a key without the realm. The
+  profile is now keyed by the full name and the realm (`Purrdee Bubson - ClassicBetaPvE`) and bound at
+  PLAYER_LOGIN, when the client knows the name for sure, so a cold login no longer lands in an `Unknown`
+  profile. Profiles saved under the other spellings are folded into it the first time each character logs
+  in: the long-standing profile keeps its values, the others fill its gaps, and `/gtf diag` says what was
+  adopted.
 - **The Services channel is filtered too**, like Trade (`/gtf services off` leaves it alone): that is
   where the shops advertise.
 - **A web address written with a trick is still a web address**: `store,com`, `store . com`,
