@@ -1,4 +1,6 @@
-# AKForeverTradeFilter
+# AKForeverChatFilter
+
+(AKForeverTradeFilter until 0.1.1 - the name changed when it stopped being about Trade alone.)
 
 For **World of Warcraft: Forever** (1.60.1, Interface 16001). Trade chat shows trade.
 
@@ -6,7 +8,7 @@ Status: **v0.1.0 (2026-09-30)**, proven in the game on its first day: the word l
 hundred lines of live Trade, each called by its owner first and by the filter second, until the two agreed on
 94% of them.
 
-Install: CurseForge, Wago, or the zip from the GitHub release into `Interface\AddOns\AKForeverTradeFilter`.
+Install: CurseForge, Wago, or the zip from the GitHub release into `Interface\AddOns\AKForeverChatFilter`.
 
 ## What it does
 
@@ -26,8 +28,8 @@ a party, a country, a war, a faith, a screen. The words sort the line into one o
 
 The world outside never stays, and a loud word of it - a politician, a country, a war, a faith, a
 streamer - is a hard pass whatever else the line says (`WTS [Sulfuras] 50g made in china` goes). So is a
-web address of any kind, a Discord invite included, and so is a gold seller: real money, a delivery, a
-price in dollars. Which of the other kinds stay is a setting per kind:
+web address of any kind, a Discord invite included - also when it is written with a trick (`store,com`,
+`store dot com`) - and so is a seller for real money: a delivery, a price in dollars, a shop taking orders. Which of the other kinds stay is a setting per kind:
 
 - `/gtf mode trade`: trade only.
 - `/gtf mode game` (the default): everything about the game - trade, groups, guilds, questions, talk.
@@ -50,7 +52,10 @@ country), and so is any politician past or present. A nationality or a language 
 minutes their chatter goes too, and so does a reply naming them, unless a line is clearly game business.
 `/gtf sticky off` turns that off.
 
-Trade is filtered out of the box; `/gtf general on` adds General. No other channel is touched. Nothing is
+Trade and the Services channel are filtered out of the box (`/gtf services off` leaves Services alone);
+`/gtf general on` adds General. **Adverts go from every public channel** - a web address or a seller for
+real money is hidden in General, LocalDefense and LookingForGroup too, and nothing else there is touched
+(`/gtf adverts off`). A channel players made themselves is never touched. Nothing is
 rewritten: the client's own message event filter (`ChatFrameUtil.AddMessageEventFilter`) hands the line
 over, the addon says "skip it" or nothing, and the chat window does the rest. A line the client keeps from
 addons (a secret value) goes through untouched.
@@ -70,9 +75,9 @@ forgets them.
 
 ## Commands
 
-`/gtf` lists them: `on`, `off`, `mode trade|game|chat`, `show <kind>`, `hide <kind>`, `kinds`, `answers on|off`, `general on|off`, `sticky on|off`, `test`,
+`/gtf` lists them: `on`, `off`, `mode trade|game|chat`, `show <kind>`, `hide <kind>`, `kinds`, `answers on|off`, `services on|off`, `general on|off`, `adverts on|off`, `sticky on|off`, `test`,
 `allow`, `block`, `unlearn`, `words`, `review [all]`, `clear`, `stats`, `diag`.
-`/akforevertradefilter` is the long form.
+`/acf` and `/akforeverchatfilter` are the other spellings.
 
 ## How it stays out of Blizzard's way
 
@@ -87,8 +92,3 @@ forgets them.
 `lua tests/run.lua` from the addon's folder (Lua 5.4; the addon's files run in a 5.1-shaped environment).
 The mock models this build's filter registry, three chat windows, and secret values.
 
-## Saved settings on the Forever beta
-
-`AKForeverTradeFilterDB` is one account-wide table (the log and the taught words are shared; the options
-are per character). Should the client write it and not read it back, `tools/Install-SavedStateBridge.ps1`
-installs the companion addon that feeds it back in.

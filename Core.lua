@@ -1,4 +1,4 @@
--- AKForeverTradeFilter core: namespace, safe calls, event dispatch, message bus, saved variables,
+-- AKForeverChatFilter core: namespace, safe calls, event dispatch, message bus, saved variables,
 -- session log and slash commands.
 --
 -- The mission of this addon family, built for the WoW: Forever game mode: minimalistic UI additions that
@@ -22,7 +22,7 @@ if string.find(ns.version, "@", 1, true) then
 end
 ns.version = (string.gsub(ns.version, "^v", ""))
 
-local PRINT_PREFIX = "|cff5ac8e8AKForeverTradeFilter|r: "
+local PRINT_PREFIX = "|cff5ac8e8AKForeverChatFilter|r: "
 
 function ns:Print(...)
     local parts = {}
@@ -154,10 +154,8 @@ function ns:On(event, fn)
 end
 
 ------------------------------------------------------------------------
--- Saved variables: ONE account-wide table, per-character options under db.chars["Name - Realm"].
--- One file is what lets the beta workaround (tools/Install-SavedStateBridge.ps1) restore it should
--- the client write SavedVariables and not read them back. The log and the words you teach are
--- account-wide: what is trade is trade on every character.
+-- Saved variables: ONE account-wide table, per-character options under db.chars["Name - Realm"]. The
+-- log and the words you teach are account-wide: what is trade is trade on every character.
 ------------------------------------------------------------------------
 local OPTION_DEFAULTS = {
     enabled = true,       -- the filter is on
@@ -169,7 +167,9 @@ local OPTION_DEFAULTS = {
     -- about the game, or going on from the sender's own game line counts as game talk.
     answers = false,
     trade = true,         -- filter the Trade channel
-    general = false,      -- ... and General
+    services = true,      -- ... and the Services channel, where the shops advertise
+    general = false,      -- ... and General (the whole filter; adverts go from General either way)
+    adverts = true,       -- a web address or a seller for real money is hidden in EVERY public channel of the game
     sticky = true,        -- a sender's next lines follow a hidden real-world line for a while, unless clearly game business
 }
 
@@ -195,16 +195,13 @@ local function characterKey()
 end
 
 local function initDB()
-    local bridge = AKForeverTradeFilter_SavedStateBridge
-    if type(AKForeverTradeFilterDB) ~= "table" then
-        AKForeverTradeFilterDB = {}
+    if type(AKForeverChatFilterDB) ~= "table" then
+        AKForeverChatFilterDB = {}
         ns.savedStateSource = "none (first run, or the client did not load it)"
-    elseif type(bridge) == "table" and bridge.table == AKForeverTradeFilterDB then
-        ns.savedStateSource = "bridge addon"
     else
         ns.savedStateSource = "client"
     end
-    local db = AKForeverTradeFilterDB
+    local db = AKForeverChatFilterDB
 
     db.schema = db.schema or 1
     db.loads = (db.loads or 0) + 1
@@ -247,9 +244,10 @@ function ns:RegisterCommand(name, help, fn)
     commandOrder[#commandOrder + 1] = name
 end
 
-SLASH_AKFOREVERTRADEFILTER1 = "/akforevertradefilter"
-SLASH_AKFOREVERTRADEFILTER2 = "/gtf"
-SlashCmdList["AKFOREVERTRADEFILTER"] = function(message)
+SLASH_AKFOREVERCHATFILTER1 = "/akforeverchatfilter"
+SLASH_AKFOREVERCHATFILTER2 = "/gtf"
+SLASH_AKFOREVERCHATFILTER3 = "/acf"
+SlashCmdList["AKFOREVERCHATFILTER"] = function(message)
     local name, rest = string.match(message or "", "^%s*(%S*)%s*(.-)%s*$")
     local command = commands[string.lower(name or "")]
     if command then

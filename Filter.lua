@@ -34,7 +34,9 @@ local function remember(lineID, verdict)
     end
 end
 
--- "trade" | "general" | nil - which of the channels this addon knows a line came from
+-- "trade" | "services" | "general" | "public" | nil - which of the channels this addon knows a line came
+-- from. "public" is any other channel of the game's own (LocalDefense, LookingForGroup ...: they carry a
+-- zone channel number); a channel players made themselves is nobody's business and gives nil.
 function Filter.ChannelKind(zoneChannelID, channelBaseName, channelName)
     if type(zoneChannelID) == "number" and ZONE_CHANNELS[zoneChannelID] then
         return ZONE_CHANNELS[zoneChannelID]
@@ -45,10 +47,15 @@ function Filter.ChannelKind(zoneChannelID, channelBaseName, channelName)
             lower = string.gsub(lower, "^%d+%.%s*", "") -- "2. Trade - City"
             if string.find(lower, "^trade") then
                 return "trade"
+            elseif string.find(lower, "^services") then
+                return "services"
             elseif string.find(lower, "^general") then
                 return "general"
             end
         end
+    end
+    if type(zoneChannelID) == "number" and zoneChannelID > 0 then
+        return "public"
     end
     return nil
 end
@@ -142,6 +149,30 @@ function Filter.Decide(kind, sender, text)
     return verdict
 end
 
+-- A line in a public channel the full filter does not run on: only an advert goes - a web address, a
+-- seller for real money. Everything else is left alone and leaves no trace: not counted, not logged.
+function Filter.DecideAdvert(kind, sender, text)
+    local reason, verdict = ns.Rules.Advert(text)
+    if not reason then
+        return { keep = true }
+    end
+    local stats = Filter.stats
+    stats.seen, stats.hidden = stats.seen + 1, stats.hidden + 1
+    stats.adverts = (stats.adverts or 0) + 1
+    Filter.Record({
+        t = type(time) == "function" and time() or math.floor(GetTime()),
+        ch = kind,
+        who = type(sender) == "string" and sender or "?",
+        text = text,
+        keep = false,
+        kind = "world",
+        why = reason,
+        score = verdict.score,
+        work = verdict.work,
+    })
+    return { keep = false }
+end
+
 -- The callback. Its arguments are the event's: text, sender, language, channel name, target, flags,
 -- zone channel id, channel index, channel base name, language id, line id, sender guid, ...
 local function onMessage(chatFrame, event, text, sender, _, channelName, _, _, zoneChannelID, _, channelBaseName, _, lineID)
@@ -149,7 +180,13 @@ local function onMessage(chatFrame, event, text, sender, _, channelName, _, _, z
         return
     end
     local kind = Filter.ChannelKind(zoneChannelID, channelBaseName, channelName)
-    if not kind or not ns:GetOption(kind) then
+    if not kind then
+        return
+    end
+    -- the whole filter where it is switched on (Trade, Services, General when asked); elsewhere in
+    -- public, adverts only
+    local whole = kind ~= "public" and ns:GetOption(kind) == true
+    if not whole and (kind == "trade" or kind == "services" or ns:GetOption("adverts") == false) then
         return
     end
     if ns.AnySecret(text, sender, lineID) or type(text) ~= "string" then
@@ -158,7 +195,7 @@ local function onMessage(chatFrame, event, text, sender, _, channelName, _, _, z
     end
     local verdict = type(lineID) == "number" and recent[lineID] or nil
     if not verdict then
-        verdict = Filter.Decide(kind, sender, text)
+        verdict = whole and Filter.Decide(kind, sender, text) or Filter.DecideAdvert(kind, sender, text)
         if type(lineID) == "number" then
             remember(lineID, verdict)
         end
@@ -285,14 +322,34 @@ ns:RegisterCommand("answers", "'off' (default): a line counts by its own words o
     ns:Print("answers: " .. (word == "on" and "chatter after a game question is an answer." or "every line by its own words."))
 end)
 
-ns:RegisterCommand("general", "'on': filter the General channel as well; 'off' (default): Trade only", function(rest)
+ns:RegisterCommand("services", "'on' (default): filter the Services channel like Trade; 'off': leave it alone", function(rest)
+    local word = string.lower(rest or "")
+    if word ~= "on" and word ~= "off" then
+        ns:Print("usage: /gtf services on | off   (now: " .. (ns:GetOption("services") and "on" or "off") .. ")")
+        return
+    end
+    ns:SetOption("services", word == "on")
+    ns:Print("Services: " .. (word == "on" and "filtered like Trade." or "left alone."))
+end)
+
+ns:RegisterCommand("adverts", "'on' (default): a web address or a seller for real money is hidden in every public channel - General, LocalDefense, LookingForGroup; 'off': only where the whole filter runs", function(rest)
+    local word = string.lower(rest or "")
+    if word ~= "on" and word ~= "off" then
+        ns:Print("usage: /gtf adverts on | off   (now: " .. (ns:GetOption("adverts") ~= false and "on" or "off") .. ")")
+        return
+    end
+    ns:SetOption("adverts", word == "on")
+    ns:Print("adverts: " .. (word == "on" and "hidden in every public channel." or "hidden only where the whole filter runs."))
+end)
+
+ns:RegisterCommand("general", "'on': the whole filter on the General channel as well; 'off' (default): only adverts go from General", function(rest)
     local word = string.lower(rest or "")
     if word ~= "on" and word ~= "off" then
         ns:Print("usage: /gtf general on | off   (now: " .. (ns:GetOption("general") and "on" or "off") .. ")")
         return
     end
     ns:SetOption("general", word == "on")
-    ns:Print("General: " .. (word == "on" and "filtered too." or "left alone."))
+    ns:Print("General: " .. (word == "on" and "filtered too." or "left alone, but for adverts."))
 end)
 
 ns:RegisterCommand("sticky", "'on' (default): after a real-world line, the same sender's next lines go too for a few minutes unless clearly game business; 'off'", function(rest)

@@ -1,4 +1,21 @@
-# AKForeverTradeFilter
+# AKForeverChatFilter
+
+## 0.1.1
+
+- **Renamed to AKForeverChatFilter** - it was AKForeverTradeFilter, and it stopped being about Trade alone.
+  The folder is new: delete the old `AKForeverTradeFilter` folder in `Interface\AddOns`. Settings start
+  afresh (`/gtf allow` and `/gtf block` teach the words again); `/gtf` stays, `/acf` is new.
+- **The Services channel is filtered too**, like Trade (`/gtf services off` leaves it alone): that is
+  where the shops advertise.
+- **A web address written with a trick is still a web address**: `store,com`, `store . com`,
+  `store(dot)com`, `store dot com`.
+- **A shop's advert is a line gone even without an address**: taking orders and pre-orders, "we cover
+  your leveling", a professional team, piloted or self-play. A player selling a dungeon run for gold is
+  still trade.
+- **Adverts go from every public channel**: a web address or a seller for real money is hidden in
+  General, LocalDefense and LookingForGroup too - and nothing else there is touched (`/gtf adverts off`
+  turns that off; `/gtf general on` still puts the whole filter on General). A channel players made
+  themselves is never touched.
 
 ## 0.1.0
 

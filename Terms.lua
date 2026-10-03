@@ -158,6 +158,13 @@ Terms.LISTS = {
         "gold for sale", "wow gold", "gold shop", "gold store", "gold seller", "website", "livechat", "live chat",
         "whatsapp", "telegram", "skype", "wechat", "per 100g", "per 1000g", "per 1k", "lowest price", "best price",
         "trusted", "legit gold", "gold cheap", "power leveling", "powerleveling", "boosting service",
+        -- a shop's advert (heard 2026-10-02: "we cover your Leveling & Dungeons ... Order for Beta or
+        -- Pre-Order for release >>> MythicStore.com <<<"): nobody in the game takes orders
+        "pre order", "preorder", "pre orders", "preorders", "order now", "order today", "order here", "order for beta",
+        "place your order", "we cover", "we cover your", "our store", "our shop", "our site", "our website",
+        "visit our", "boosting services", "leveling service", "leveling services", "carry service", "carry services",
+        "professional team", "pro team", "account sharing", "selfplay", "self play", "piloted", "money back",
+        "best prices", "cheapest prices", "dot com",
     } },
     -- THE WORLD OUTSIDE, loud: politics, war, faith, the words no trade line needs
     { weight = -3, kind = "world", words = {
@@ -352,5 +359,10 @@ Terms.PATTERNS = {
     { weight = -3, kind = "web", name = "a web address", pattern = "%.co%.uk%f[%W]" },
     { weight = -3, kind = "web", name = "a web address", pattern = "%.de%f[%W]" },
     { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]discord%.gg" },
+    -- ... written with a trick: "store,com", "store . com", "store(dot)com", "store dot com". Only "com"
+    -- gets this latitude: "org" is Orgrimmar and "net" is what a fisherman holds.
+    { weight = -3, kind = "web", name = "a web address", pattern = "%w%s*[%.,]%s*com%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "[%(%[{<]%s*dot%s*[%)%]}>]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]dot%s*com%f[%W]" },
 }
 

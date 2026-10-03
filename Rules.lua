@@ -51,7 +51,7 @@ local ANSWERS_MAX = 3       -- ... for at most this many answers (the first sess
 local ANSWER_WORDS = 4      -- an answer is a short line ("tomorrow", "press K > General") ...
 local ANSWER_WORDS_TOPIC = 8 -- ... or a longer one that shares a word with the question
 
-Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" } -- (a gold seller's words count as "seller" and make the line world)
+Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" } -- (the words of a seller for real money count as "seller" and make the line world)
 Rules.PRESETS = {
     trade = { trade = true, groups = false, guilds = false, questions = false, talk = false, chatter = false },
     game = { trade = true, groups = true, guilds = true, questions = true, talk = true, chatter = false },
@@ -344,7 +344,7 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     if (scored.kinds.web or 0) <= -LOUD then
         kind, reason = "world", "a web address"
     elseif (scored.kinds.seller or 0) <= -LOUD then
-        kind, reason = "world", "a gold seller: " .. named(scored.hits, -1)
+        kind, reason = "world", "a seller for real money: " .. named(scored.hits, -1)
     elseif loud then
         kind, reason = "world", "real-world talk: " .. named(scored.hits, -1)
     elseif score < 0 then
@@ -423,6 +423,16 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
         hits = scored.hits,
         work = work,
     }
+end
+
+-- An advert, wherever it is said: a web address, or a seller for real money. The reason and the work, or
+-- nothing. (No sender, no time: nothing is remembered of the line, no conversation is touched.)
+function Rules.Advert(text)
+    local verdict = Rules.Verdict(text, "chat")
+    if verdict.reason == "a web address" or string.find(verdict.reason, "^a seller for real money", 1) then
+        return verdict.reason, verdict
+    end
+    return nil
 end
 
 -- What '/gtf test <line>' prints

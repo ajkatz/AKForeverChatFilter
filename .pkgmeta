@@ -1,15 +1,14 @@
 # BigWigs packager (https://github.com/BigWigsMods/packager) - v2.6.0+ knows WoW: Forever:
 # "## Interface: 16001" is detected as game type "forever" (CurseForge flavour 88568, Wago "forever").
-package-as: AKForeverTradeFilter
+package-as: AKForeverChatFilter
 
 manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown
 
-# What players do not need in Interface\AddOns\AKForeverTradeFilter
+# What players do not need in Interface\AddOns\AKForeverChatFilter
 ignore:
   - tests
-  - tools
   - docs
   - .github
   - .gitattributes

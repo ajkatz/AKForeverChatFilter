@@ -1,4 +1,4 @@
--- Stand-in for the WoW client, enough to run AKForeverTradeFilter under a plain Lua interpreter. Same
+-- Stand-in for the WoW client, enough to run AKForeverChatFilter under a plain Lua interpreter. Same
 -- design as the other addons' mocks. What it models of Blizzard's side:
 --
 --  * chat: ChatFrameUtil.AddMessageEventFilter as this build's ChatFrameFilters.lua has it - the callback
@@ -16,7 +16,7 @@ local Mock = {}
 
 local REAL_PRINT = print
 local unpack = table.unpack or unpack
-local ADDON = "AKForeverTradeFilter"
+local ADDON = "AKForeverChatFilter"
 
 Mock.SECRET = setmetatable({}, { __tostring = function() return "<SECRET>" end })
 
@@ -240,9 +240,9 @@ function Mock.install(options)
     end
 
     if options.db then
-        global("AKForeverTradeFilterDB", options.db)
+        global("AKForeverChatFilterDB", options.db)
     else
-        global("AKForeverTradeFilterDB", nil)
+        global("AKForeverChatFilterDB", nil)
     end
 
     -- the addon's files, in the TOC's order, in a 5.1-shaped environment
@@ -319,6 +319,8 @@ function Mock.chat(opts)
         zoneID, baseName = 2, "Trade - City"
     elseif kind == "general" then
         zoneID, baseName = 1, "General - Durotar"
+    elseif kind == "LocalDefense" then
+        zoneID, baseName = 22, "LocalDefense - Orgrimmar" -- (a channel of the game's own: it has a number)
     else
         zoneID, baseName = 0, kind
     end
@@ -326,7 +328,7 @@ function Mock.chat(opts)
     if opts.secret == "text" then text = Mock.SECRET end
     if opts.secret == "sender" then sender = Mock.SECRET end
     if opts.secret == "lineID" then lineID = Mock.SECRET end
-    local index = zoneID > 0 and zoneID or 5
+    local index = (zoneID > 0 and zoneID < 10) and zoneID or 5
     local channelName = index .. ". " .. baseName
     local args = { text, sender, "Common", channelName, "", "", zoneID, index, baseName, 0, lineID, "Player-1-000ABC" }
     -- the event, to every frame that listens (the addon counts these)

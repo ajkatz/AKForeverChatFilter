@@ -1,4 +1,4 @@
--- Scenario tests for AKForeverTradeFilter: lua tests/run.lua  (from the addon's folder)
+-- Scenario tests for AKForeverChatFilter: lua tests/run.lua  (from the addon's folder)
 package.path = "tests/?.lua;" .. package.path
 local Mock = require("wowmock")
 
@@ -53,7 +53,7 @@ end
 local SWORD = "|cff0070dd|Hitem:2296:0:0:0:0:0:0:0:60|h[Gloves of Old]|h|r"
 
 ------------------------------------------------------------------------
-Mock.realPrint("AKForeverTradeFilter scenarios")
+Mock.realPrint("AKForeverChatFilter scenarios")
 
 scenario("the rules: seven kinds of line, and every verdict says why", function()
     local ns = start()
@@ -116,7 +116,20 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(verdict("Yeah therapy is literally indoctrination camps you pay for").kind, "world")
     equal(verdict("go to therapy").keep, false)
     v = verdict("Cheap gold! 5$ per 100g, fast delivery, whisper me")
-    equal(v.kind, "world", "a gold seller is a hard pass, whatever the trade words say"); check(v.reason:find("^a gold seller: "), v.reason)
+    equal(v.kind, "world", "a gold seller is a hard pass, whatever the trade words say"); check(v.reason:find("^a seller for real money: "), v.reason)
+    -- a shop's advert, as seen 2026-10-02 - with the address, with the address written with a trick, with none
+    local AD = "Enjoy Forever - we cover your Leveling & Dungeons & Gearing & Professions! Order for Beta or Pre-Order for release >>> MythicStore"
+    equal(verdict(AD .. ".com <<<").reason, "a web address")
+    for _, tail in ipairs({ ",com <<<", " .com <<<", ". com <<<", " , com <<<", "(dot)com <<<", " dot com <<<", " [dot] com <<<", " <<<" }) do
+        equal(verdict(AD .. tail).keep, false, "the advert, ending '" .. tail .. "'")
+    end
+    check(verdict(AD .. " <<<").reason:find("^a seller for real money: "), verdict(AD .. " <<<").reason)
+    -- what must not be taken for an address or a shop
+    equal(verdict("port to UC. Org is full").keep, true, "org is Orgrimmar")
+    equal(verdict("lf2m sm, come on").kind, "groups", "'come' is not '.com'")
+    equal(verdict("wts fishing pole. net profit 2g").kind, "trade")
+    equal(verdict("WTS boost SM 10g per run").kind, "trade", "a player selling a run for gold is trade")
+    equal(verdict("in order to get there take the zeppelin").kind, "chatter", "'order' alone is a word, not a shop")
     equal(verdict("wts 1000g, paypal only").kind, "world")
     v = verdict("<Forever Bound> recruiting, join discord.gg/abc123 for a spot in MC")
     equal(v.kind, "world", "a web address is a hard pass, guild ad or not"); equal(v.reason, "a web address")
@@ -274,29 +287,29 @@ scenario("a conversation about the game: the answers to a game question count as
     Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
     equal(Mock.chat({ text = "south of the crossroads, in the mountain", sender = "Ben Benson" }), true, "kept by its words")
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false, "the bare answer is chatter out of the box")
-    SlashCmdList.AKFOREVERTRADEFILTER("answers on")
+    SlashCmdList.AKFOREVERCHATFILTER("answers on")
     Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" })
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), true, "... and an answer when asked for")
     equal(lastLog(ns).kind, "questions"); check(lastLog(ns).work:find("no word of either side", 1, true), lastLog(ns).work)
-    SlashCmdList.AKFOREVERTRADEFILTER("answers off")
+    SlashCmdList.AKFOREVERCHATFILTER("answers off")
     equal(Mock.chat({ text = "yes", sender = "Cal Calson" }), false)
-    SlashCmdList.AKFOREVERTRADEFILTER("hide questions")
+    SlashCmdList.AKFOREVERCHATFILTER("hide questions")
     check(printed("a question about the game: hidden"))
     equal(Mock.chat({ text = "anyone know where the wc entrance is?", sender = "Ann Annson" }), false, "questions off: the question goes too")
     equal(Mock.chat({ text = "wts " .. SWORD, sender = "Ann Annson" }), true)
-    SlashCmdList.AKFOREVERTRADEFILTER("kinds")
+    SlashCmdList.AKFOREVERCHATFILTER("kinds")
     check(printed("hidden: questions, chatter"), "the kinds are listed")
-    SlashCmdList.AKFOREVERTRADEFILTER("hide guilds")
+    SlashCmdList.AKFOREVERCHATFILTER("hide guilds")
     equal(Mock.chat({ text = "<Forever Bound> is recruiting", sender = "Eve Evans" }), false, "guild recruitment off")
-    SlashCmdList.AKFOREVERTRADEFILTER("mode game")
+    SlashCmdList.AKFOREVERCHATFILTER("mode game")
     equal(Mock.chat({ text = "<Forever Bound> is recruiting", sender = "Eve Evans" }), true, "a preset puts every kind back")
-    SlashCmdList.AKFOREVERTRADEFILTER("hide world")
+    SlashCmdList.AKFOREVERCHATFILTER("hide world")
     check(printed("usage: /gtf hide trade | groups"), "the world outside cannot be shown")
-    SlashCmdList.AKFOREVERTRADEFILTER("mode trade")
+    SlashCmdList.AKFOREVERCHATFILTER("mode trade")
     check(printed("mode: trade (trade only)"))
     equal(Mock.chat({ text = "LFM SM cath need healer", sender = "Ann Annson" }), false)
     -- the first version's setting is read as its preset
-    local db = AKForeverTradeFilterDB
+    local db = AKForeverChatFilterDB
     db.chars["Purrdee - ClassicBetaPvE"].options.kinds = nil
     db.chars["Purrdee - ClassicBetaPvE"].options.mode = "balanced"
     ns = start({ db = db })
@@ -306,27 +319,27 @@ end)
 scenario("the words you teach outrank the lists, and are kept", function()
     local ns = start()
     equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, true, "an elixir of the game")
-    SlashCmdList.AKFOREVERTRADEFILTER("block noggenfogger")
+    SlashCmdList.AKFOREVERCHATFILTER("block noggenfogger")
     check(printed("'noggenfogger' is the world outside from now on"))
     equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, false)
     equal(ns.Rules.Verdict("spaghetti time", "game").keep, false)
-    SlashCmdList.AKFOREVERTRADEFILTER("allow spaghetti time")
+    SlashCmdList.AKFOREVERCHATFILTER("allow spaghetti time")
     equal(ns.Rules.Verdict("spaghetti time", "game").keep, true, "a phrase can be taught too")
     equal(ns.db.words["spaghetti time"], "game")
-    SlashCmdList.AKFOREVERTRADEFILTER("words")
+    SlashCmdList.AKFOREVERCHATFILTER("words")
     check(printed("spaghetti time - game business") and printed("noggenfogger - the world outside") and printed("2 word(s) taught"))
-    SlashCmdList.AKFOREVERTRADEFILTER("unlearn noggenfogger")
+    SlashCmdList.AKFOREVERCHATFILTER("unlearn noggenfogger")
     equal(ns.Rules.Verdict("who wants noggenfogger", "game").keep, true)
-    SlashCmdList.AKFOREVERTRADEFILTER("unlearn cheese")
+    SlashCmdList.AKFOREVERCHATFILTER("unlearn cheese")
     check(printed("usage: /gtf unlearn"))
 
     -- taught words come back next session
-    local db = AKForeverTradeFilterDB
+    local db = AKForeverChatFilterDB
     ns = start({ db = db })
     equal(ns.Rules.Verdict("spaghetti time", "game").keep, true, "remembered")
 end)
 
-scenario("only Trade is filtered out of the box; General when asked; every other channel is left alone", function()
+scenario("Trade and Services are filtered out of the box; General when asked; every other channel is left alone", function()
     local ns = start()
     equal(ns.Filter.how, "ChatFrameUtil.AddMessageEventFilter")
     equal(Mock.chat({ text = "wts " .. SWORD .. " 50g" }), true, "trade shows")
@@ -338,33 +351,67 @@ scenario("only Trade is filtered out of the box; General when asked; every other
     equal(lastLog(ns).id, 2, "every logged line has its number")
 
     equal(Mock.chat({ text = "trump is the best", channel = "general" }), true, "General is left alone out of the box")
-    SlashCmdList.AKFOREVERTRADEFILTER("general on")
+    equal(#ns.db.log, 2, "and leaves no trace")
+
+    -- ... but for adverts: a web address or a seller for real money goes from EVERY public channel
+    local AD = "Enjoy Forever - we cover your Leveling & Dungeons! Order for Beta >>> MythicStore.com <<<"
+    equal(Mock.chat({ text = AD, channel = "general", sender = "Shopkeeper" }), false, "seen in Orgrimmar's General, 2026-10-02")
+    equal(lastLog(ns).ch, "general"); equal(lastLog(ns).why, "a web address"); equal(lastLog(ns).keep, false)
+    equal(Mock.chat({ text = "cheap gold, fast delivery, whisper me", channel = "LocalDefense" }), false, "a channel of the game's own")
+    equal(lastLog(ns).ch, "public"); check(lastLog(ns).why:find("^a seller for real money"), lastLog(ns).why)
+    equal(Mock.chat({ text = AD, channel = "World" }), true, "a channel players made themselves is never touched")
+    equal(Mock.chat({ text = "lol", channel = "LocalDefense" }), true, "everything else there is left alone")
+    equal(ns.Filter.stats.adverts, 2); equal(#ns.db.log, 4, "only the adverts are logged")
+    SlashCmdList.AKFOREVERCHATFILTER("adverts off")
+    check(printed("adverts: hidden only where the whole filter runs"))
+    equal(Mock.chat({ text = AD, channel = "general" }), true, "off: General is left alone altogether")
+    SlashCmdList.AKFOREVERCHATFILTER("adverts on")
+    SlashCmdList.AKFOREVERCHATFILTER("adverts sideways")
+    check(printed("usage: /gtf adverts on | off"))
+    -- (the counts below are about Trade and General)
+    ns.Filter.stats.seen, ns.Filter.stats.hidden = ns.Filter.stats.seen - 2, ns.Filter.stats.hidden - 2
+    table.remove(ns.db.log); table.remove(ns.db.log)
+    SlashCmdList.AKFOREVERCHATFILTER("general on")
     equal(Mock.chat({ text = "trump is the best", channel = "general" }), false, "... until asked")
     equal(lastLog(ns).ch, "general")
     equal(Mock.chat({ text = "trump is the best", channel = "World" }), true, "a channel this addon does not know is never touched")
+    -- the Services channel: where the shops advertise - filtered like Trade
+    local seen = ns.Filter.stats.seen
+    equal(Mock.chat({ text = "Order now >>> MythicStore.com <<<", channel = "Services" }), false, "a shop's advert in Services")
+    equal(lastLog(ns).ch, "services"); equal(lastLog(ns).why, "a web address")
+    equal(Mock.chat({ text = "wts " .. SWORD .. " 50g", channel = "Services" }), true, "a trade line there stays")
+    SlashCmdList.AKFOREVERCHATFILTER("services off")
+    check(printed("Services: left alone"))
+    equal(Mock.chat({ text = "Order now >>> MythicStore.com <<<", channel = "Services" }), true, "off: left alone")
+    SlashCmdList.AKFOREVERCHATFILTER("services on")
+    SlashCmdList.AKFOREVERCHATFILTER("services sideways")
+    check(printed("usage: /gtf services on | off"))
+    ns.Filter.stats.seen = seen -- (the counts below are about Trade and General)
+    ns.Filter.stats.hidden = ns.Filter.stats.hidden - 1; ns.Filter.stats.kept = ns.Filter.stats.kept - 1
+    table.remove(ns.db.log); table.remove(ns.db.log)
     equal(ns.Filter.stats.seen, 3, "and not decided on")
 
-    SlashCmdList.AKFOREVERTRADEFILTER("off")
+    SlashCmdList.AKFOREVERCHATFILTER("off")
     equal(Mock.chat({ text = "trump is the best" }), true, "off: every line shows")
     equal(ns.Filter.stats.seen, 3, "and nothing is decided")
-    SlashCmdList.AKFOREVERTRADEFILTER("on")
+    SlashCmdList.AKFOREVERCHATFILTER("on")
     equal(Mock.chat({ text = "trump is the best" }), false)
 
-    SlashCmdList.AKFOREVERTRADEFILTER("mode chat")
+    SlashCmdList.AKFOREVERCHATFILTER("mode chat")
     equal(Mock.chat({ text = "lol", sender = "Carl" }), true, "chat keeps chatter (from somebody who was not just talking politics)")
     equal(Mock.chat({ text = "lol" }), false, "Bob was: his chatter goes on from his real-world line")
-    SlashCmdList.AKFOREVERTRADEFILTER("mode game")
+    SlashCmdList.AKFOREVERCHATFILTER("mode game")
     equal(Mock.chat({ text = "lol", sender = "Carl" }), false, "game does not")
-    SlashCmdList.AKFOREVERTRADEFILTER("mode sideways")
+    SlashCmdList.AKFOREVERCHATFILTER("mode sideways")
     check(printed("usage: /gtf mode trade | game | chat"))
 
     -- unreadable: hands off, and counted
     equal(Mock.chat({ text = "trump is the best", secret = "text" }), true, "a secret line goes through untouched")
     equal(Mock.chat({ text = "trump is the best", secret = "sender" }), true)
 
-    SlashCmdList.AKFOREVERTRADEFILTER("stats")
+    SlashCmdList.AKFOREVERCHATFILTER("stats")
     check(printed("hidden"), "the count is printed")
-    SlashCmdList.AKFOREVERTRADEFILTER("test trump 2028")
+    SlashCmdList.AKFOREVERCHATFILTER("test trump 2028")
     check(printed("HIDDEN (real-world talk: trump; trump -3 (score -3))"))
 end)
 
@@ -374,7 +421,10 @@ scenario("the channel is known by its number, or failing that by its name", func
     equal(ns.Filter.ChannelKind(1, "General - Durotar"), "general")
     equal(ns.Filter.ChannelKind(0, "Trade - City"), "trade", "the name will do")
     equal(ns.Filter.ChannelKind(nil, nil, "3. General - Orgrimmar"), "general")
-    equal(ns.Filter.ChannelKind(26, "LookingForGroup"), nil)
+    equal(ns.Filter.ChannelKind(26, "LookingForGroup"), "public", "a channel of the game's own: adverts go from it")
+    equal(ns.Filter.ChannelKind(0, "LookingForGroup"), nil, "without a number it is somebody's own channel")
+    equal(ns.Filter.ChannelKind(0, "Services", "4. Services"), "services")
+    equal(ns.Filter.ChannelKind(0, "TradeLocal", "5. TradeLocal"), "trade", "the local Trade is Trade")
     equal(ns.Filter.ChannelKind(0, "World"), nil)
     equal(ns.Filter.ChannelKind(Mock.SECRET, Mock.SECRET, Mock.SECRET), nil, "secrets are nobody's channel")
 end)
@@ -394,8 +444,8 @@ scenario("the review window: the lines that went, with the reason; a click print
     Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Alice" })
     Mock.chat({ text = "trump is the best", sender = "Bob" })
     Mock.chat({ text = "lol", sender = "Carl" })
-    SlashCmdList.AKFOREVERTRADEFILTER("review")
-    local window, list = AKForeverTradeFilterWindow, AKForeverTradeFilterReview
+    SlashCmdList.AKFOREVERCHATFILTER("review")
+    local window, list = AKForeverChatFilterWindow, AKForeverChatFilterReview
     check(window and window:IsShown(), "the window is up")
     equal(ns.Review:Describe().showing, "hidden")
     equal(#list.__messages, 2, "the two hidden lines")
@@ -405,7 +455,7 @@ scenario("the review window: the lines that went, with the reason; a click print
     check(list.__messages[2]:find("chatter", 1, true))
     check(ns.Review.widgets.note:GetText():find("hidden lines, 2 shown", 1, true), ns.Review.widgets.note:GetText())
 
-    SlashCmdList.AKFOREVERTRADEFILTER("review all")
+    SlashCmdList.AKFOREVERCHATFILTER("review all")
     equal(#list.__messages, 3, "every line")
     check(list.__messages[1]:find("[Gloves of Old]", 1, true) and not list.__messages[1]:find("Hitem", 1, true), "an item link is shown by its name only: " .. list.__messages[1])
     check(list.__messages[1]:find("kept", 1, true))
@@ -426,8 +476,8 @@ scenario("the review window: the lines that went, with the reason; a click print
     Mock.click(ns.Review.widgets.close)
     equal(window:IsShown(), false)
 
-    SlashCmdList.AKFOREVERTRADEFILTER("review")
-    SlashCmdList.AKFOREVERTRADEFILTER("clear")
+    SlashCmdList.AKFOREVERCHATFILTER("review")
+    SlashCmdList.AKFOREVERCHATFILTER("clear")
     equal(#ns.db.log, 0)
     equal(#list.__messages, 1); check(list.__messages[1]:find("nothing hidden yet", 1, true))
 end)
@@ -436,13 +486,13 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
     local ns = start()
     Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Alice" })
     Mock.chat({ text = "trump is the best", sender = "Bob" })
-    SlashCmdList.AKFOREVERTRADEFILTER("review")
-    SlashCmdList.AKFOREVERTRADEFILTER("diag")
+    SlashCmdList.AKFOREVERCHATFILTER("review")
+    SlashCmdList.AKFOREVERCHATFILTER("diag")
     check(printed("report saved"))
     Mock.fire("PLAYER_LOGOUT")
 
-    local report = AKForeverTradeFilterDB.diag
-    equal(report.asked, true); check(AKForeverTradeFilterDB.diagAtLogout, "the logout's report goes beside it")
+    local report = AKForeverChatFilterDB.diag
+    equal(report.asked, true); check(AKForeverChatFilterDB.diagAtLogout, "the logout's report goes beside it")
     equal(report.addonVersion, "0.1.0-test")
     equal(report.options.mode, "game"); equal(report.options.kinds.guilds, true); equal(report.filter.how, "ChatFrameUtil.AddMessageEventFilter")
     equal(report.filter.stats.seen, 2); equal(report.filter.stats.hidden, 1)
@@ -460,7 +510,7 @@ scenario("diagnostics and logout run; the report is SavedVariables-safe and hold
             end
         end
     end
-    walk(AKForeverTradeFilterDB, "AKForeverTradeFilterDB")
+    walk(AKForeverChatFilterDB, "AKForeverChatFilterDB")
 end)
 
 scenario("the log is a ring: eight hundred lines at most, and the saved state comes back", function()
@@ -471,7 +521,7 @@ scenario("the log is a ring: eight hundred lines at most, and the saved state co
     equal(#ns.db.log, 800)
     equal(ns.db.log[1].text, "trump 11", "the oldest went")
     equal(ns.db.log[800].id, 810, "numbers keep counting")
-    local db = AKForeverTradeFilterDB
+    local db = AKForeverChatFilterDB
     ns = start({ db = db })
     equal(#ns.db.log, 800, "back next session")
     equal(ns.savedStateSource, "client")

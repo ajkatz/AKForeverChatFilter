@@ -80,7 +80,7 @@ local function build()
         return
     end
     local template = (type(BackdropTemplateMixin) == "table") and "BackdropTemplate" or nil
-    window = CreateFrame("Frame", "AKForeverTradeFilterWindow", UIParent, template)
+    window = CreateFrame("Frame", "AKForeverChatFilterWindow", UIParent, template)
     window:SetSize(WIDTH, HEIGHT)
     window:SetFrameStrata("MEDIUM")
     window:SetClampedToScreen(true)
@@ -108,7 +108,7 @@ local function build()
     local w = widgets
     w.title = text(window, "GameFontNormal")
     w.title:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -10)
-    w.title:SetText("AKForeverTradeFilter")
+    w.title:SetText("AKForeverChatFilter")
     w.note = text(window, "GameFontDisableSmall", "RIGHT")
     w.note:SetPoint("TOPRIGHT", window, "TOPRIGHT", -30, -12)
     w.close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
@@ -117,7 +117,7 @@ local function build()
         ns.SafeCall(Review.Close)
     end)
 
-    w.list = CreateFrame("ScrollingMessageFrame", "AKForeverTradeFilterReview", window)
+    w.list = CreateFrame("ScrollingMessageFrame", "AKForeverChatFilterReview", window)
     w.list:SetPoint("TOPLEFT", window, "TOPLEFT", PAD, -36)
     w.list:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -PAD, 40)
     if type(w.list.SetFontObject) == "function" then

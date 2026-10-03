@@ -25,11 +25,11 @@ jobs:
             echo "== $zip"
             unzip -l "$zip"
             echo "== the TOC inside"
-            unzip -p "$zip" AKForeverTradeFilter/AKForeverTradeFilter.toc
+            unzip -p "$zip" AKForeverChatFilter/AKForeverChatFilter.toc
           done
       - uses: actions/upload-artifact@v7
         with:
-          name: AKForeverTradeFilter-package-check
+          name: AKForeverChatFilter-package-check
           path: .release/*.zip
           include-hidden-files: true # (.release is a dot folder)
           retention-days: 7
