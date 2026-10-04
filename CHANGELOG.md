@@ -1,5 +1,12 @@
 # AKForeverChatFilter
 
+## 0.1.2
+
+- **The anal joke is a line gone**: `anal [Thunderfury]`, `anal` and a link or two - the oldest spam in
+  Trade, and the link in it used to count as game business. The word on its own only: a canal, an analysis
+  and something banal are left alone. It goes from every public channel, like a web address
+  (`/gtf adverts off` keeps that to Trade and Services).
+
 ## 0.1.1
 
 - **Renamed to AKForeverChatFilter** - it was AKForeverTradeFilter, and it stopped being about Trade alone.

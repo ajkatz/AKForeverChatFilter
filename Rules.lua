@@ -13,7 +13,8 @@
 --     world      the world outside                                    (a politician, a country, a war, a faith)
 -- A loud word of the world outside - a politician, a country, a war, a faith - is a hard pass whatever
 -- else the line says: "biden is a warlock" goes, and so does "wts [Sulfuras] 50g made in china" (a country
--- named is a line gone, the user's own rule). Then trade, groups and guilds are told apart by which of them
+-- named is a line gone, the user's own rule). So are a web address, a seller for real money and the anal
+-- joke ("anal [Thunderfury]"), link or no link. Then trade, groups and guilds are told apart by which of them
 -- the words favour (a tie goes to guilds, then groups); a line with only words of the game is talk, or a
 -- question if it looks like one; a line with nothing is chatter.
 --
@@ -345,6 +346,8 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
         kind, reason = "world", "a web address"
     elseif (scored.kinds.seller or 0) <= -LOUD then
         kind, reason = "world", "a seller for real money: " .. named(scored.hits, -1)
+    elseif (scored.kinds.crude or 0) <= -LOUD then
+        kind, reason = "world", "the anal joke"
     elseif loud then
         kind, reason = "world", "real-world talk: " .. named(scored.hits, -1)
     elseif score < 0 then
@@ -425,11 +428,12 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
     }
 end
 
--- An advert, wherever it is said: a web address, or a seller for real money. The reason and the work, or
--- nothing. (No sender, no time: nothing is remembered of the line, no conversation is touched.)
+-- An advert, wherever it is said: a web address, a seller for real money - or the anal joke, spam of the
+-- same standing. The reason and the work, or nothing. (No sender, no time: nothing is remembered of the
+-- line, no conversation is touched.)
 function Rules.Advert(text)
     local verdict = Rules.Verdict(text, "chat")
-    if verdict.reason == "a web address" or string.find(verdict.reason, "^a seller for real money", 1) then
+    if verdict.reason == "a web address" or verdict.reason == "the anal joke" or string.find(verdict.reason, "^a seller for real money", 1) then
         return verdict.reason, verdict
     end
     return nil

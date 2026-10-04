@@ -150,7 +150,7 @@ function Filter.Decide(kind, sender, text)
 end
 
 -- A line in a public channel the full filter does not run on: only an advert goes - a web address, a
--- seller for real money. Everything else is left alone and leaves no trace: not counted, not logged.
+-- seller for real money, the anal joke. Everything else is left alone and leaves no trace: not counted, not logged.
 function Filter.DecideAdvert(kind, sender, text)
     local reason, verdict = ns.Rules.Advert(text)
     if not reason then
@@ -332,7 +332,7 @@ ns:RegisterCommand("services", "'on' (default): filter the Services channel like
     ns:Print("Services: " .. (word == "on" and "filtered like Trade." or "left alone."))
 end)
 
-ns:RegisterCommand("adverts", "'on' (default): a web address or a seller for real money is hidden in every public channel - General, LocalDefense, LookingForGroup; 'off': only where the whole filter runs", function(rest)
+ns:RegisterCommand("adverts", "'on' (default): a web address, a seller for real money or the anal joke is hidden in every public channel - General, LocalDefense, LookingForGroup; 'off': only where the whole filter runs", function(rest)
     local word = string.lower(rest or "")
     if word ~= "on" and word ~= "off" then
         ns:Print("usage: /gtf adverts on | off   (now: " .. (ns:GetOption("adverts") ~= false and "on" or "off") .. ")")

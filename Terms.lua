@@ -364,5 +364,9 @@ Terms.PATTERNS = {
     { weight = -3, kind = "web", name = "a web address", pattern = "%w%s*[%.,]%s*com%f[%W]" },
     { weight = -3, kind = "web", name = "a web address", pattern = "[%(%[{<]%s*dot%s*[%)%]}>]" },
     { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]dot%s*com%f[%W]" },
+    -- the anal joke: "anal [Thunderfury]", "anal" and a link or two - the oldest spam in Trade, and the link
+    -- in it used to count as game business (the user, 2026-10-04). The word on its own only: a canal, an
+    -- analysis and something banal are left alone.
+    { weight = -3, kind = "crude", name = "the anal joke", pattern = "%f[%a]anal%f[%A]" },
 }
 

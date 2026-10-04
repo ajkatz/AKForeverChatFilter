@@ -171,7 +171,7 @@ local OPTION_DEFAULTS = {
     trade = true,         -- filter the Trade channel
     services = true,      -- ... and the Services channel, where the shops advertise
     general = false,      -- ... and General (the whole filter; adverts go from General either way)
-    adverts = true,       -- a web address or a seller for real money is hidden in EVERY public channel of the game
+    adverts = true,       -- a web address, a seller for real money or the anal joke is hidden in EVERY public channel of the game
     sticky = true,        -- a sender's next lines follow a hidden real-world line for a while, unless clearly game business
 }
 

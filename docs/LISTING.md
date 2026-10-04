@@ -5,8 +5,8 @@
 Every line of Trade is scored by the words in it: an item link, WTS/WTB/LF, a sum of gold, a profession, a dungeon, a zone or a class count for the game; a politician, a party, a country, a war, a faith, a streamer or a screen count for the world outside. The words sort each line into one of seven kinds - trade, a group forming, a guild recruiting, a question about the game, other game talk, chatter, the world outside - and every kind but the world is a setting.
 
 - `/gtf mode trade` shows trade only; `/gtf mode game` (default) everything about the game; `/gtf mode chat` everything but the world outside. `/gtf hide guilds` takes one kind out.
-- A country or a political figure named is a line gone, whatever else the line says. So is any web address (also one written with a trick: `store,com`, `store dot com`), a seller for real money - a shop taking orders, a gold seller - and any talk of streamers.
-- **Adverts go from every public channel**: a web address or a seller for real money is hidden in General, LocalDefense and LookingForGroup too, and nothing else there is touched.
+- A country or a political figure named is a line gone, whatever else the line says. So is any web address (also one written with a trick: `store,com`, `store dot com`), a seller for real money - a shop taking orders, a gold seller - any talk of streamers, and the anal joke (`anal [Thunderfury]`).
+- **Adverts go from every public channel**: a web address, a seller for real money or the anal joke is hidden in General, LocalDefense and LookingForGroup too, and nothing else there is touched.
 - `/gtf review`: the lines that went, each with its kind and its reason. Click a line and it is printed to chat with every word that counted and its weight.
 - `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word; taught words outrank the lists.
 

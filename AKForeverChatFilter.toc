@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Version: @project-version@
 ## Title: AKForeverChatFilter
-## Notes: Trade chat shows trade - and no advert survives in any public channel. A Trade or Services line stays when it looks like game business - item links, WTS/WTB/LF, gold, professions, dungeons, zones - and goes when it carries real-world talk; plain chatter goes too unless you ask to keep it. A web address or a seller for real money goes everywhere. A review window shows what went and why.
+## Notes: Trade chat shows trade - and no advert survives in any public channel. A Trade or Services line stays when it looks like game business - item links, WTS/WTB/LF, gold, professions, dungeons, zones - and goes when it carries real-world talk; plain chatter goes too unless you ask to keep it. A web address, a seller for real money or the anal joke goes everywhere. A review window shows what went and why.
 ## Author: Purrdee
 ## X-License: MIT
 ## X-Wago-ID: aN0aa36j
