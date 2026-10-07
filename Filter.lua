@@ -230,6 +230,7 @@ end
 
 ns:Listen("LOGIN", function()
     ns.Rules.Rebuild(ns.db and ns.db.words)
+    ns.Rules.SetMemes(ns.db and ns.db.memes)
     register()
 end)
 
@@ -408,6 +409,36 @@ ns:RegisterCommand("unlearn", "'/gtf unlearn cheese': forget a word you taught",
     ns.db.words[word] = nil
     ns.Rules.Rebuild(ns.db.words)
     ns:Print("'" .. word .. "' forgotten.")
+end)
+
+ns:RegisterCommand("meme", "'/gtf meme add gnome': lines joking with that word are chatter while the meme lasts; 'remove' ends it; '/gtf meme' lists the words (murloc from the start)", function(rest)
+    local what, word = string.match(rest or "", "^%s*(%S*)%s*(.-)%s*$")
+    what, word = string.lower(what or ""), string.lower(word or "")
+    local list = ns.db.memes
+    if what == "add" and word ~= "" then
+        for _, known in ipairs(list) do
+            if known == word then
+                ns:Print("'" .. word .. "' is on the list already.")
+                return
+            end
+        end
+        list[#list + 1] = word
+        ns.Rules.SetMemes(list)
+        ns:Print("'" .. word .. "' is a meme: lines joking with it are chatter until |cffffd100/gtf meme remove " .. word .. "|r.")
+    elseif what == "remove" and word ~= "" then
+        for index, known in ipairs(list) do
+            if known == word then
+                table.remove(list, index)
+                ns.Rules.SetMemes(list)
+                ns:Print("'" .. word .. "' is a word of the game again.")
+                return
+            end
+        end
+        ns:Print("'" .. word .. "' is not on the list; |cffffd100/gtf meme|r lists it.")
+    else
+        ns:Print("meme words (lines joking with them are chatter):", #list > 0 and table.concat(list, ", ") or "none")
+        ns:Print("|cffffd100/gtf meme add <word>|r, |cffffd100/gtf meme remove <word>|r")
+    end
 end)
 
 ns:RegisterCommand("words", "the words you taught", function()

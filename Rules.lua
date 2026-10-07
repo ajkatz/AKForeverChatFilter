@@ -52,6 +52,39 @@ local ANSWERS_MAX = 3       -- ... for at most this many answers (the first sess
 local ANSWER_WORDS = 4      -- an answer is a short line ("tomorrow", "press K > General") ...
 local ANSWER_WORDS_TOPIC = 8 -- ... or a longer one that shares a word with the question
 
+-- A MEME FLOOD. Now and then Trade is taken over by jokes on one word, and the word is a word of the
+-- game, so every joke counted as game talk. A meme word makes a line chatter - unless the line is business
+-- (trade, a group, a guild) or the world outside already; business with the word in it is still business.
+-- The built-in list is Terms.MEMES; '/gtf meme add|remove' keeps the account's own (Filter.lua).
+local memes, memesSet = {}, false
+
+function Rules.SetMemes(list)
+    memes, memesSet = {}, true
+    for _, word in ipairs(list or ns.Terms.MEMES or {}) do
+        word = string.lower(word)
+        local escaped = string.gsub(word, "[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+        -- a whole word, plural or not; a word that begins or ends with something other than a letter
+        -- ("c++") gets no frontier there, since no frontier can sit between two non-letters
+        local head = string.find(word, "^%a") and "%f[%a]" or ""
+        local tail = string.find(word, "%a$") and "s?%f[%A]" or ""
+        memes[#memes + 1] = { word = word, pattern = head .. escaped .. tail }
+    end
+end
+
+-- the meme word a line jokes with, or nil
+function Rules.MemeWord(text)
+    if not memesSet then
+        Rules.SetMemes()
+    end
+    local lower = string.lower(text)
+    for _, meme in ipairs(memes) do
+        if string.find(lower, meme.pattern) then
+            return meme.word
+        end
+    end
+    return nil
+end
+
 Rules.KINDS = { "trade", "groups", "guilds", "questions", "talk", "chatter", "world" } -- (the words of a seller for real money count as "seller" and make the line world)
 Rules.PRESETS = {
     trade = { trade = true, groups = false, guilds = false, questions = false, talk = false, chatter = false },
@@ -379,6 +412,12 @@ function Rules.Verdict(text, shown, sender, now, sticky, answers)
             -- it - in a line the length of a reply, not a speech
             kind, reason = "talk", "goes on from their own game line"
         end
+    end
+    -- a meme flood: a word everybody is joking with makes a line chatter, unless the line is business or the
+    -- world outside already
+    local meme = Rules.MemeWord(text)
+    if meme and (kind == "talk" or kind == "chatter" or kind == "questions") then
+        kind, reason = "chatter", "the " .. meme .. " meme"
     end
     -- the thread rule: a real-world talker's CHATTER goes on for a while; a line with a word of the game is its own
     if sticky ~= false and sender and now and kind ~= "world" and scored.game == 0 then

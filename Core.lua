@@ -313,6 +313,7 @@ local function initDB()
     db.chars = db.chars or {}
     db.log = db.log or {}       -- every line the filter saw, with its verdict (Filter.lua)
     db.words = db.words or {}   -- the words you taught: [word] = "game" | "real"
+    db.memes = db.memes or { "murloc" } -- the words Trade is joking with: lines joking with them are chatter (/gtf meme)
 
     ns.db = db
     ns.cdb = { options = {} } -- a stand-in until bindProfile, at PLAYER_LOGIN

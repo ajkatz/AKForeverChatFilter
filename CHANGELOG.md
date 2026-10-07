@@ -1,5 +1,14 @@
 # AKForeverChatFilter
 
+## 0.1.3
+
+- **A meme flood is chatter.** Trade spent an afternoon on murloc jokes - "Jurassic Murloc", "Murloc Gump",
+  578 lines from 204 people - and every one of them counted as game talk, because a murloc is a creature
+  of the game. A line joking with a meme word is chatter now, hidden unless you keep chatter; business
+  with the word in it (a murloc fin soup for sale, a group for the murloc quest) stays business. `murloc`
+  is on the list from the start; `/gtf meme add <word>` puts the next one on, `/gtf meme remove <word>`
+  takes it off when the joke is over, `/gtf meme` lists them.
+
 ## 0.1.2
 
 - **The anal joke is a line gone**: `anal [Thunderfury]`, `anal` and a link or two - the oldest spam in

@@ -320,6 +320,11 @@ Terms.LISTS = {
 -- "somebody spergin in trade chat" is not trade.
 Terms.NEUTRAL = { "trade chat", "trade channel", "general chat", "in trade", "on trade" }
 
+-- The memes: a word Trade is making jokes with, hundreds of lines in an afternoon ("Jurassic Murloc",
+-- "Murloc Gump", 578 lines from 204 people on 2026-10-06). A line joking with it is chatter (Rules.lua),
+-- unless the line is business or the world outside already. '/gtf meme add|remove' keeps the list up.
+Terms.MEMES = { "murloc" }
+
 -- Things that are not words: a hyperlink is the strongest sign of all, a sum of gold nearly as strong,
 -- a web address the opposite. Patterns in Lua's own dialect, run on the lower-cased line.
 Terms.PATTERNS = {

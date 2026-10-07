@@ -202,6 +202,42 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
     equal(Rules.Explain("trump 2028"), "HIDDEN (real-world talk: trump; trump -3 (score -3))")
 end)
 
+scenario("a meme flood: lines joking with a meme word are chatter, business with the word in it is still business, and the list is the account's", function()
+    local ns = start()
+    local Rules = ns.Rules
+    local function verdict(text, shown)
+        return Rules.Verdict(text, shown or "game")
+    end
+    -- the murloc afternoon of 2026-10-06: titles with the word in them, 578 lines from 204 people
+    local v = verdict("Jurassic Murloc")
+    equal(v.kind, "chatter"); equal(v.reason, "the murloc meme (chatter off)"); equal(v.keep, false)
+    equal(verdict("Murlocs of the Carribean").keep, false, "the plural too")
+    equal(verdict("Real Murlocs of Elwynn Forest").keep, false, "another word of the game in the title does not save it")
+    equal(verdict("Holy shit, we're still doing Murloc?").keep, false, "a joke question")
+    equal(verdict("Jurassic Murloc", "chat").keep, true, "whoever keeps chatter keeps the jokes")
+    -- business with the word stays business
+    v = verdict("wts murloc fin soup 5g"); equal(v.kind, "trade"); equal(v.keep, true)
+    v = verdict("lf2m murloc quest at the coast"); equal(v.kind, "groups"); equal(v.keep, true)
+    v = verdict("<Murloc Mafia> recruiting all levels"); equal(v.kind, "guilds"); equal(v.keep, true)
+    equal(verdict("trump is a murloc").kind, "world", "the world outside is still the world outside")
+    -- the list: the account's own, kept by command
+    SlashCmdList.AKFOREVERCHATFILTER("meme add gnome")
+    check(printed("'gnome' is a meme"), "said so")
+    equal(verdict("Gnome of Thrones").reason, "the gnome meme (chatter off)")
+    SlashCmdList.AKFOREVERCHATFILTER("meme remove murloc")
+    check(printed("'murloc' is a word of the game again"), "said so")
+    equal(verdict("Jurassic Murloc").kind, "talk", "the meme over, the word is game talk again")
+    equal(#ns.db.memes, 1); equal(ns.db.memes[1], "gnome")
+    SlashCmdList.AKFOREVERCHATFILTER("meme")
+    check(printed("meme words"), "the list is printed")
+    SlashCmdList.AKFOREVERCHATFILTER("meme remove dragon")
+    check(printed("'dragon' is not on the list"), "a word not on the list")
+    -- a word with a character of Lua's patterns in it is matched as written
+    SlashCmdList.AKFOREVERCHATFILTER("meme add c++")
+    equal(verdict("the c++ of warcraft").reason, "the c++ meme (chatter off)")
+    equal(#Mock.errors, 0)
+end)
+
 scenario("a thread: after a real-world line the same sender's chatter goes too, and a reply naming them, unless clearly game business", function()
     local ns = start()
     local Rules = ns.Rules

@@ -68,6 +68,7 @@ addons (a secret value) goes through untouched.
 | `/gtf review` | a window with the lines that went, newest last, each with its kind and its reason. `/gtf review all` shows the kept ones too. **Click a line** and it is printed to chat with every word that counted and its weight (`trump -3 (score -3)`), so the word to teach is in plain sight |
 | `/gtf test <line>` | what the filter would do with that line, why, and every word that counted with its weight |
 | `/gtf allow <word>` / `/gtf block <word>` | teach a word (or a phrase): game business, or the world outside. Taught words outrank the built-in lists. `/gtf words` lists them, `/gtf unlearn <word>` forgets one |
+| `/gtf meme add <word>` / `/gtf meme remove <word>` | a word Trade is making jokes with ("Jurassic Murloc", "Murloc Gump" - hundreds of lines in an afternoon): lines joking with it are chatter, hidden unless you keep chatter, while business with the word in it stays business. `murloc` is on the list from the start; `/gtf meme` lists the words |
 | `/gtf stats` | this session's count: seen, hidden, kept |
 | `/gtf diag` | a report into the settings file, then `/reload`: options, counts, the last lines with their verdicts, every error |
 
