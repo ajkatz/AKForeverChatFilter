@@ -8,7 +8,7 @@ Every line of Trade is scored by the words in it: an item link, WTS/WTB/LF, a su
 - A country or a political figure named is a line gone, whatever else the line says. So is any web address (also one written with a trick: `store,com`, `store dot com`), a seller for real money - a shop taking orders, a gold seller - any talk of streamers, and the anal joke (`anal [Thunderfury]`).
 - **Adverts go from every public channel**: a web address, a seller for real money or the anal joke is hidden in General, LocalDefense and LookingForGroup too, and nothing else there is touched.
 - `/gtf review`: the lines that went, each with its kind and its reason. Click a line and it is printed to chat with every word that counted and its weight.
-- `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word; taught words outrank the lists.
+- `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word; taught words outrank the lists. `/gtf meme add <word>` makes a word Trade is joking with (murloc from the start) chatter while the meme lasts; `remove` ends it.
 
 Trade and the Services channel are filtered out of the box; `/gtf general on` puts the whole filter on General. Nothing is rewritten: the client's own message event filter hands each line over, the addon says "skip it" or nothing. A line the client keeps from addons goes through untouched.
 
