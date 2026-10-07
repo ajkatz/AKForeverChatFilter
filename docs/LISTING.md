@@ -10,6 +10,8 @@ Every line of Trade is scored by the words in it: an item link, WTS/WTB/LF, a su
 - `/gtf review`: the lines that went, each with its kind and its reason. Click a line and it is printed to chat with every word that counted and its weight.
 - `/gtf test <line>` shows what would happen to any line, and why. `/gtf allow <word>` / `/gtf block <word>` teach a word; taught words outrank the lists. `/gtf meme add <word>` makes a word Trade is joking with (murloc from the start) chatter while the meme lasts; `remove` ends it.
 
-Trade and the Services channel are filtered out of the box; `/gtf general on` puts the whole filter on General. Nothing is rewritten: the client's own message event filter hands each line over, the addon says "skip it" or nothing. A line the client keeps from addons goes through untouched.
+Trade and the Services channel are filtered out of the box; `/gtf general on` puts the whole filter on General (`/gtf services off` leaves Services alone, `/gtf adverts off` leaves the other public channels alone). Nothing is rewritten: the client's own message event filter hands each line over, the addon says "skip it" or nothing. A line the client keeps from addons goes through untouched.
+
+The rest of the commands: `/gtf off` / `on` (every line again / the filter back), `/gtf show chatter` (one kind back on), `/gtf kinds` (which kinds are shown), `/gtf sticky on|off` (after a real-world line the same sender's next lines go too for a few minutes), `/gtf answers on|off` (chatter right after a game question counts as an answer), `/gtf stats`, `/gtf clear` (the session's count; forget the logged lines), `/gtf words` / `/gtf unlearn <word>` (the words you taught), `/gtf diag` (a report for bug reports, then `/reload`). `/gtf` on its own lists them.
 
 Source and issues: https://github.com/ajkatz/AKForeverChatFilter - MIT.
