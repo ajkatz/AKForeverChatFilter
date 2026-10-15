@@ -15,3 +15,4 @@ Trade and the Services channel are filtered out of the box; `/gtf general on` pu
 The rest of the commands: `/gtf off` / `on` (every line again / the filter back), `/gtf show chatter` (one kind back on), `/gtf kinds` (which kinds are shown), `/gtf sticky on|off` (after a real-world line the same sender's next lines go too for a few minutes), `/gtf answers on|off` (chatter right after a game question counts as an answer), `/gtf stats`, `/gtf clear` (the session's count; forget the logged lines), `/gtf words` / `/gtf unlearn <word>` (the words you taught), `/gtf diag` (a report for bug reports, then `/reload`). `/gtf` on its own lists them.
 
 Source and issues: https://github.com/ajkatz/AKForeverChatFilter - MIT.
+Community: questions, bug reports and ideas for the AKForever addons - join the Discord: https://discord.gg/cFvvvHVm4J
