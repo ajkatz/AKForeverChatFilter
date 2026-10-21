@@ -18,6 +18,16 @@ local RECENT_MAX = 80   -- line ids whose verdict is remembered
 -- Blizzard's own numbers for the city channels (zoneChannelID); the name is the fallback
 local ZONE_CHANNELS = { [1] = "general", [2] = "trade" }
 
+-- WHERE THE WHOLE FILTER RUNS (the user, 2026-10-20: "make the chat filter work automatically on city general
+-- chat as well and local defense and such"): Trade and Services; General in a CITY - in a capital General is
+-- Trade's overflow, out in a zone it is that zone's own talk and only loses its adverts; and the game's other
+-- channels - LocalDefense, LookingForGroup and the like. A city is known by the zone General names ("General -
+-- Orgrimmar"): the old world's capitals, and any zone where Trade lines were heard (Forever may have more).
+local CITIES = { ["Orgrimmar"] = true, ["Thunder Bluff"] = true, ["Undercity"] = true,
+    ["Stormwind City"] = true, ["Ironforge"] = true, ["Darnassus"] = true }
+local CITY_LINES = 3 -- Trade lines heard in a zone before it counts as a city (a line can come in as you leave one)
+local tradeHeard = {} -- [zone] = Trade lines heard there this session
+
 Filter.stats = { seen = 0, hidden = 0, kept = 0, secret = 0 }
 Filter.how = "not registered yet"
 
@@ -58,6 +68,88 @@ function Filter.ChannelKind(zoneChannelID, channelBaseName, channelName)
         return "public"
     end
     return nil
+end
+
+local function readableText(value)
+    if ns.IsSecret(value) or type(value) ~= "string" or value == "" then
+        return nil
+    end
+    return value
+end
+
+-- the channel's own name, without its number or its zone: "LocalDefense", "General", "Trade"
+local function channelLabel(channelBaseName, channelName)
+    local name = readableText(channelBaseName) or readableText(channelName)
+    if not name then
+        return nil
+    end
+    name = string.gsub(name, "^%d+%.%s*", "")
+    return (string.gsub(name, "%s%-%s.+$", ""))
+end
+
+local function zoneNow()
+    local ok, zone = pcall(GetRealZoneText)
+    return ok and readableText(zone) or nil
+end
+
+-- the zone a General line belongs to: from its channel's name ("General - Orgrimmar"), else where you are
+local function generalZone(channelBaseName, channelName)
+    for _, name in ipairs({ channelBaseName or false, channelName or false }) do
+        local text = readableText(name)
+        local zone = text and string.match(text, "%s%-%s(.+)$")
+        if zone then
+            return zone
+        end
+    end
+    return zoneNow()
+end
+
+function Filter.IsCity(zone)
+    if not zone then
+        return false
+    end
+    return CITIES[zone] == true or (ns.db and type(ns.db.cities) == "table" and ns.db.cities[zone] == true) or false
+end
+
+-- a Trade line says where you are is a city
+local function noteCity()
+    local zone = zoneNow()
+    if not zone or Filter.IsCity(zone) or not ns.db then
+        return
+    end
+    tradeHeard[zone] = (tradeHeard[zone] or 0) + 1
+    if tradeHeard[zone] >= CITY_LINES then
+        ns.db.cities = ns.db.cities or {}
+        ns.db.cities[zone] = true
+        ns:Log("city_learned", zone)
+    end
+end
+
+-- "city" (default) | "on" | "off" - the first versions' true / false read as on / off
+function Filter.GeneralMode()
+    local value = ns:GetOption("general")
+    if value == true or value == "on" then
+        return "on"
+    elseif value == false or value == "off" then
+        return "off"
+    end
+    return "city"
+end
+
+-- does the whole filter run on this channel? (No: adverts only there, or nothing at all.)
+function Filter.Whole(kind, channelBaseName, channelName)
+    if kind == "trade" or kind == "services" then
+        return ns:GetOption(kind) == true
+    elseif kind == "general" then
+        local mode = Filter.GeneralMode()
+        if mode == "on" then
+            return true
+        end
+        return mode == "city" and Filter.IsCity(generalZone(channelBaseName, channelName))
+    elseif kind == "public" then
+        return ns:GetOption("public") ~= false
+    end
+    return false
 end
 
 -- the line's entry in the saved log
@@ -125,7 +217,7 @@ local function setKinds(kinds)
 end
 
 -- The verdict for a line that reached the filter for the first time: scored, counted, logged.
-function Filter.Decide(kind, sender, text)
+function Filter.Decide(kind, sender, text, chan)
     local now = GetTime()
     local verdict = ns.Rules.Verdict(text, Filter.Shown(), sender, now, ns:GetOption("sticky") ~= false, ns:GetOption("answers") == true)
     local stats = Filter.stats
@@ -138,6 +230,7 @@ function Filter.Decide(kind, sender, text)
     local entry = Filter.Record({
         t = type(time) == "function" and time() or math.floor(now),
         ch = kind,
+        chan = chan,
         who = type(sender) == "string" and sender or "?",
         text = text,
         keep = verdict.keep,
@@ -151,7 +244,7 @@ end
 
 -- A line in a public channel the full filter does not run on: only an advert goes - a web address, a
 -- seller for real money, the anal joke. Everything else is left alone and leaves no trace: not counted, not logged.
-function Filter.DecideAdvert(kind, sender, text)
+function Filter.DecideAdvert(kind, sender, text, chan)
     local reason, verdict = ns.Rules.Advert(text)
     if not reason then
         return { keep = true }
@@ -162,6 +255,7 @@ function Filter.DecideAdvert(kind, sender, text)
     Filter.Record({
         t = type(time) == "function" and time() or math.floor(GetTime()),
         ch = kind,
+        chan = chan,
         who = type(sender) == "string" and sender or "?",
         text = text,
         keep = false,
@@ -183,9 +277,8 @@ local function onMessage(chatFrame, event, text, sender, _, channelName, _, _, z
     if not kind then
         return
     end
-    -- the whole filter where it is switched on (Trade, Services, General when asked); elsewhere in
-    -- public, adverts only
-    local whole = kind ~= "public" and ns:GetOption(kind) == true
+    -- the whole filter where it runs (Filter.Whole); elsewhere in public, adverts only
+    local whole = Filter.Whole(kind, channelBaseName, channelName)
     if not whole and (kind == "trade" or kind == "services" or ns:GetOption("adverts") == false) then
         return
     end
@@ -193,9 +286,16 @@ local function onMessage(chatFrame, event, text, sender, _, channelName, _, _, z
         Filter.stats.secret = Filter.stats.secret + 1
         return -- unreadable: hands off, the line goes through
     end
+    if type(sender) ~= "string" or sender == "" then
+        return -- the game's own announcement ("The Crossroads is under attack!"): nobody sent it, never touched
+    end
     local verdict = type(lineID) == "number" and recent[lineID] or nil
     if not verdict then
-        verdict = whole and Filter.Decide(kind, sender, text) or Filter.DecideAdvert(kind, sender, text)
+        if kind == "trade" then
+            noteCity()
+        end
+        local chan = channelLabel(channelBaseName, channelName)
+        verdict = whole and Filter.Decide(kind, sender, text, chan) or Filter.DecideAdvert(kind, sender, text, chan)
         if type(lineID) == "number" then
             remember(lineID, verdict)
         end
@@ -343,14 +443,30 @@ ns:RegisterCommand("adverts", "'on' (default): a web address, a seller for real 
     ns:Print("adverts: " .. (word == "on" and "hidden in every public channel." or "hidden only where the whole filter runs."))
 end)
 
-ns:RegisterCommand("general", "'on': the whole filter on the General channel as well; 'off' (default): only adverts go from General", function(rest)
+local GENERAL_SAID = {
+    city = "filtered in a city (the old world's capitals, and where Trade is heard); in a zone only adverts go.",
+    on = "filtered everywhere.",
+    off = "left alone, but for adverts.",
+}
+
+ns:RegisterCommand("general", "'city' (default): the whole filter on General in a city, only adverts go from a zone's General; 'on': everywhere; 'off': adverts only", function(rest)
     local word = string.lower(rest or "")
-    if word ~= "on" and word ~= "off" then
-        ns:Print("usage: /gtf general on | off   (now: " .. (ns:GetOption("general") and "on" or "off") .. ")")
+    if not GENERAL_SAID[word] then
+        ns:Print("usage: /gtf general city | on | off   (now: " .. Filter.GeneralMode() .. ")")
         return
     end
-    ns:SetOption("general", word == "on")
-    ns:Print("General: " .. (word == "on" and "filtered too." or "left alone, but for adverts."))
+    ns:SetOption("general", word)
+    ns:Print("General: " .. GENERAL_SAID[word])
+end)
+
+ns:RegisterCommand("public", "'on' (default): the whole filter on LocalDefense, LookingForGroup and the game's other channels; 'off': only adverts go from them", function(rest)
+    local word = string.lower(rest or "")
+    if word ~= "on" and word ~= "off" then
+        ns:Print("usage: /gtf public on | off   (now: " .. (ns:GetOption("public") ~= false and "on" or "off") .. ")")
+        return
+    end
+    ns:SetOption("public", word == "on")
+    ns:Print("LocalDefense, LookingForGroup and the game's other channels: " .. (word == "on" and "filtered." or "adverts only."))
 end)
 
 ns:RegisterCommand("sticky", "'on' (default): after a real-world line, the same sender's next lines go too for a few minutes unless clearly game business; 'off'", function(rest)

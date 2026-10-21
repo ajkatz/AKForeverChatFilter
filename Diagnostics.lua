@@ -66,7 +66,8 @@ function Diagnostics:Collect()
         savedVariableLoads = db.loads,
         options = {
             enabled = ns:GetOption("enabled"), mode = ns.Filter.ModeName(), kinds = ns.Filter.Shown(), trade = ns:GetOption("trade"),
-            general = ns:GetOption("general"), services = ns:GetOption("services"), adverts = ns:GetOption("adverts"),
+            general = ns.Filter.GeneralMode(), public = ns:GetOption("public"), cities = db.cities,
+            services = ns:GetOption("services"), adverts = ns:GetOption("adverts"),
             sticky = ns:GetOption("sticky"), answers = ns:GetOption("answers"),
         },
         filter = { how = ns.Filter.how, stats = ns.Filter.stats },

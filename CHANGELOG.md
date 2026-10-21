@@ -1,5 +1,16 @@
 # AKForeverChatFilter
 
+## 0.1.4
+
+- **A city's General and the game's own channels, filtered out of the box.** In a capital General is
+  Trade's overflow, so the whole filter now runs there too - the old world's six capitals, and any zone
+  where Trade is heard (Forever may have more). Out in a zone General is that zone's own talk and only loses
+  its adverts, as before. LocalDefense, LookingForGroup and the game's other channels get the whole filter
+  as well. The game's own announcements ("The Crossroads is under attack!") come from nobody and are never
+  touched; a channel players made themselves is still never touched. `/gtf general city|on|off` (city by
+  default; on: every zone's General; off: adverts only), `/gtf public on|off`. The log names the channel
+  each line came from.
+
 ## 0.1.3
 
 - **A meme flood is chatter.** Trade spent an afternoon on murloc jokes - "Jurassic Murloc", "Murloc Gump",

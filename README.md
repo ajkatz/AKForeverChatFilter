@@ -53,10 +53,14 @@ country), and so is any politician past or present. A nationality or a language 
 minutes their chatter goes too, and so does a reply naming them, unless a line is clearly game business.
 `/gtf sticky off` turns that off.
 
-Trade and the Services channel are filtered out of the box (`/gtf services off` leaves Services alone);
-`/gtf general on` adds General. **Adverts go from every public channel** - a web address, a seller for
-real money or the anal joke is hidden in General, LocalDefense and LookingForGroup too, and nothing else there is touched
-(`/gtf adverts off`). A channel players made themselves is never touched. Nothing is
+Trade and the Services channel are filtered out of the box (`/gtf services off` leaves Services alone),
+and so are **a city's General** - in a capital General is Trade's overflow: the old world's six capitals,
+and any zone where Trade is heard - and **LocalDefense, LookingForGroup and the game's other channels**
+(`/gtf public off` leaves them to adverts only). Out in a zone General is that zone's own talk: only its
+adverts go (`/gtf general on` filters every zone's General, `/gtf general off` none). **Adverts go from
+every public channel** - a web address, a seller for real money or the anal joke - wherever the whole
+filter does not run (`/gtf adverts off`). The game's own announcements ("The Crossroads is under
+attack!") come from nobody and are never touched, nor is a channel players made themselves. Nothing is
 rewritten: the client's own message event filter (`ChatFrameUtil.AddMessageEventFilter`) hands the line
 over, the addon says "skip it" or nothing, and the chat window does the rest. A line the client keeps from
 addons (a secret value) goes through untouched.
@@ -77,7 +81,7 @@ forgets them.
 
 ## Commands
 
-`/gtf` lists them: `on`, `off`, `mode trade|game|chat`, `show <kind>`, `hide <kind>`, `kinds`, `answers on|off`, `services on|off`, `general on|off`, `adverts on|off`, `sticky on|off`, `test`,
+`/gtf` lists them: `on`, `off`, `mode trade|game|chat`, `show <kind>`, `hide <kind>`, `kinds`, `answers on|off`, `services on|off`, `general city|on|off`, `public on|off`, `adverts on|off`, `sticky on|off`, `test`,
 `allow`, `block`, `unlearn`, `words`, `review [all]`, `clear`, `stats`, `diag`.
 `/acf` and `/akforeverchatfilter` are the other spellings.
 

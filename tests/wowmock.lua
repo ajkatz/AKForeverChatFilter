@@ -131,6 +131,7 @@ function Mock.install(options)
     Mock.state = {
         now = 1000, clock = 1700000000, secretApis = {}, lineID = 100,
         windows = {}, -- the chat windows and what they showed
+        zone = options.zone or "Durotar", -- where you are (GetRealZoneText)
         playerName = options.playerName or "Purrdee",
         surname = options.surname,                 -- a WoW: Forever surname: "Purrdee Bubson"
         build70170 = options.build70170,           -- the surname in the realm slot, as the client does since Oct 1 2026
@@ -160,6 +161,7 @@ function Mock.install(options)
     global("issecretvalue", isSecret)
     global("GetTime", function() return state.now end)
     global("time", function() return state.clock end)
+    global("GetRealZoneText", function() return state.zone end)
     global("date", function(format, t)
         if format == "%H:%M" then
             return "12:34"
@@ -355,12 +357,15 @@ function Mock.chat(opts)
     state.lineID = state.lineID + 1
     local kind = opts.channel or "trade"
     local zoneID, baseName
+    local zone = opts.zone or state.zone
     if kind == "trade" then
         zoneID, baseName = 2, "Trade - City"
     elseif kind == "general" then
-        zoneID, baseName = 1, "General - Durotar"
+        zoneID, baseName = 1, "General - " .. zone
     elseif kind == "LocalDefense" then
-        zoneID, baseName = 22, "LocalDefense - Orgrimmar" -- (a channel of the game's own: it has a number)
+        zoneID, baseName = 22, "LocalDefense - " .. zone -- (a channel of the game's own: it has a number)
+    elseif kind == "LookingForGroup" then
+        zoneID, baseName = 26, "LookingForGroup"
     else
         zoneID, baseName = 0, kind
     end

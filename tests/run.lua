@@ -385,8 +385,9 @@ scenario("the words you teach outrank the lists, and are kept", function()
     equal(ns.Rules.Verdict("spaghetti time", "game").keep, true, "remembered")
 end)
 
-scenario("Trade and Services are filtered out of the box; General when asked; every other channel is left alone", function()
+scenario("Trade and Services are filtered out of the box; General out in a zone - and, switched off, the game's other channels - only lose their adverts; General everywhere when asked", function()
     local ns = start()
+    SlashCmdList.AKFOREVERCHATFILTER("public off") -- (the game's other channels as they were: adverts only; filtered by the next scenario)
     equal(ns.Filter.how, "ChatFrameUtil.AddMessageEventFilter")
     equal(Mock.chat({ text = "wts " .. SWORD .. " 50g" }), true, "trade shows")
     equal(Mock.chat({ text = "trump is the best" }), false, "politics does not")
@@ -420,7 +421,7 @@ scenario("Trade and Services are filtered out of the box; General when asked; ev
     ns.Filter.stats.seen, ns.Filter.stats.hidden = ns.Filter.stats.seen - 3, ns.Filter.stats.hidden - 3
     table.remove(ns.db.log); table.remove(ns.db.log); table.remove(ns.db.log)
     SlashCmdList.AKFOREVERCHATFILTER("general on")
-    equal(Mock.chat({ text = "trump is the best", channel = "general" }), false, "... until asked")
+    equal(Mock.chat({ text = "trump is the best", channel = "general" }), false, "... until asked: everywhere")
     equal(lastLog(ns).ch, "general")
     equal(Mock.chat({ text = "trump is the best", channel = "World" }), true, "a channel this addon does not know is never touched")
     -- the Services channel: where the shops advertise - filtered like Trade
@@ -461,6 +462,55 @@ scenario("Trade and Services are filtered out of the box; General when asked; ev
     check(printed("hidden"), "the count is printed")
     SlashCmdList.AKFOREVERCHATFILTER("test trump 2028")
     check(printed("HIDDEN (real-world talk: trump; trump -3 (score -3))"))
+end)
+
+scenario("the city's General and the game's own channels, out of the box: General in a capital - the old world's six, or a zone where Trade is heard - gets the whole filter, a zone's General only loses its adverts; LocalDefense, LookingForGroup and the like get the whole filter; the game's own announcements are never touched; '/gtf general city|on|off', '/gtf public on|off'", function()
+    local ns, state = start()
+    -- General in a capital: Trade's overflow, the whole filter
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Orgrimmar", sender = "Ann" }), false, "Orgrimmar's General: real-world talk goes")
+    equal(lastLog(ns).ch, "general"); equal(lastLog(ns).chan, "General")
+    equal(Mock.chat({ text = "wts " .. SWORD .. " 50g", channel = "general", zone = "Orgrimmar", sender = "Ben" }), true, "trade stays")
+    equal(Mock.chat({ text = "lol", channel = "general", zone = "Stormwind City", sender = "Cid" }), false, "chatter goes, as in Trade")
+    -- General out in a zone: the zone's own talk
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Durotar", sender = "Dee" }), true, "Durotar's General is left alone")
+    -- a city the list does not know: Trade speaks there
+    state.zone = "Gilneas City"
+    for _ = 1, 3 do
+        Mock.chat({ text = "wts " .. SWORD .. " 50g", sender = "Eli" })
+    end
+    equal(ns.db.cities["Gilneas City"], true, "learned: Trade is heard there")
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Gilneas City", sender = "Fen" }), false, "so its General is filtered")
+    state.zone = "Durotar"
+    -- the game's own channels: the whole filter
+    equal(Mock.chat({ text = "lol", channel = "LocalDefense", sender = "Gil" }), false, "chatter goes from LocalDefense")
+    equal(lastLog(ns).ch, "public"); equal(lastLog(ns).chan, "LocalDefense")
+    equal(Mock.chat({ text = "LF2M SFK need heal", channel = "LookingForGroup", sender = "Hob" }), true, "a group forming stays in LookingForGroup")
+    equal(Mock.chat({ text = "trump is the best", channel = "LookingForGroup", sender = "Ike" }), false, "real-world talk goes")
+    equal(lastLog(ns).chan, "LookingForGroup")
+    equal(Mock.chat({ text = "Order now >>> MythicStore.com <<<", channel = "World", sender = "Jo" }), true, "a channel players made themselves: never touched")
+    -- the game's own announcement: nobody sent it
+    equal(Mock.chat({ text = "The Crossroads is under attack!", channel = "LocalDefense", sender = "" }), true, "an announcement is never touched")
+    -- the switches
+    SlashCmdList.AKFOREVERCHATFILTER("public off")
+    check(printed("LocalDefense, LookingForGroup and the game's other channels: adverts only."))
+    equal(Mock.chat({ text = "lol", channel = "LocalDefense", sender = "Kay" }), true, "off: only adverts go")
+    SlashCmdList.AKFOREVERCHATFILTER("public on")
+    SlashCmdList.AKFOREVERCHATFILTER("general off")
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Orgrimmar", sender = "Lou" }), true, "general off: adverts only, a city's too")
+    SlashCmdList.AKFOREVERCHATFILTER("general on")
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Durotar", sender = "Mo" }), false, "general on: everywhere")
+    SlashCmdList.AKFOREVERCHATFILTER("general city")
+    check(printed("General: filtered in a city"))
+    equal(Mock.chat({ text = "trump is the best", channel = "general", zone = "Durotar", sender = "Ned" }), true, "city: a zone's General is its own")
+    SlashCmdList.AKFOREVERCHATFILTER("general sideways")
+    check(printed("usage: /gtf general city | on | off"))
+    -- the first versions saved true / false
+    ns.cdb.options.general = false
+    equal(ns.Filter.GeneralMode(), "off")
+    ns.cdb.options.general = true
+    equal(ns.Filter.GeneralMode(), "on")
+    local report = ns.Diagnostics:Collect()
+    equal(report.options.public, true); equal(report.options.cities["Gilneas City"], true)
 end)
 
 scenario("the channel is known by its number, or failing that by its name", function()
