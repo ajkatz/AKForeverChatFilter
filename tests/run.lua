@@ -124,6 +124,23 @@ scenario("the rules: seven kinds of line, and every verdict says why", function(
         equal(verdict(AD .. tail).keep, false, "the advert, ending '" .. tail .. "'")
     end
     check(verdict(AD .. " <<<").reason:find("^a seller for real money: "), verdict(AD .. " <<<").reason)
+    -- ... and with a digit for a letter, as seen in Orgrimmar's General 2026-11-16 (".c0m"): no shop words
+    -- around it, so the address alone has to do it
+    for _, address in ipairs({ "mythicstore.c0m", "MythicStore.C0M", "mythicstore . c0m", "mythicstore,c0m", "mythicstore(dot)c0m",
+        "mythicstore dot c0m", "mythicstore.c 0 m", "mythicstore. c o m", "mythicstore.n3t", "mythicstore.0rg", "www.mythicstore c0m" }) do
+        equal(verdict("gold and leveling, fast >>> " .. address .. " <<<").reason, "a web address", address)
+        equal(Rules.Advert("gold and leveling, fast >>> " .. address .. " <<<"), "a web address", address .. " in any public channel")
+    end
+    equal(verdict("wts 20 [Copper Bar] 10m left on the AH, c0me get them").kind, "trade", "a zero in a word is not an address")
+    equal(verdict("lf1m healer, 0rg summons").kind, "groups")
+    -- ... and "www" drawn with v's ("wvvw", the same evening): the shop's name and nothing else to go by
+    for _, address in ipairs({ "wvvw.mythicstore", "WVVW mythicstore", "wvvw . mythicstore", "vvww.mythicstore", "wwvv mythicstore",
+        "vvvvvv.mythicstore", "vvwvv mythicstore", "wvvvv mythicstore", "vvvvw mythicstore" }) do
+        equal(verdict("gold and leveling, fast >>> " .. address .. " <<<").reason, "a web address", address)
+        equal(Rules.Advert("gold and leveling, fast >>> " .. address .. " <<<"), "a web address", address .. " in any public channel")
+    end
+    equal(verdict("wts [Copper Bar] x20, anyone miss wvw from the other game").kind, "trade", "'wvw' is a game mode, not an address")
+    equal(verdict("lfm brd lava run wwww that wipe").kind, "groups", "a laugh in w's is not an address")
     -- what must not be taken for an address or a shop
     equal(verdict("port to UC. Org is full").keep, true, "org is Orgrimmar")
     equal(verdict("lf2m sm, come on").kind, "groups", "'come' is not '.com'")

@@ -366,9 +366,23 @@ Terms.PATTERNS = {
     { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]discord%.gg" },
     -- ... written with a trick: "store,com", "store . com", "store(dot)com", "store dot com". Only "com"
     -- gets this latitude: "org" is Orgrimmar and "net" is what a fisherman holds.
-    { weight = -3, kind = "web", name = "a web address", pattern = "%w%s*[%.,]%s*com%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%w%s*[%.,]%s*c%s*[o0]%s*m%f[%W]" },
     { weight = -3, kind = "web", name = "a web address", pattern = "[%(%[{<]%s*dot%s*[%)%]}>]" },
-    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]dot%s*com%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]dot%s*c[o0]m%f[%W]" },
+    -- ... or with a digit for a letter (".c0m", seen in Orgrimmar's General 2026-11-16), the letters spaced
+    -- out after the dot (". c o m"), or "c0m" standing alone: no word of the game or the world reads so
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]c0m%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.n3t%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%.0rg%f[%W]" },
+    -- ... or "www" drawn with v's ("wvvw", the same evening). Spelled out one by one: "wvw" is a game mode
+    -- elsewhere and a row of w's is a laugh
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]wvvw%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]vvww%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]wwvv%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]vvwvv%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]wvvvv%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]vvvvw%f[%W]" },
+    { weight = -3, kind = "web", name = "a web address", pattern = "%f[%w]vvvvvv%f[%W]" },
     -- the anal joke: "anal [Thunderfury]", "anal" and a link or two - the oldest spam in Trade, and the link
     -- in it used to count as game business (the user, 2026-10-04). The word on its own only: a canal, an
     -- analysis and something banal are left alone.

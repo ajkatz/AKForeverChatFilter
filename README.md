@@ -29,7 +29,7 @@ a party, a country, a war, a faith, a screen. The words sort the line into one o
 The world outside never stays, and a loud word of it - a politician, a country, a war, a faith, a
 streamer - is a hard pass whatever else the line says (`WTS [Sulfuras] 50g made in china` goes). So is a
 web address of any kind, a Discord invite included - also when it is written with a trick (`store,com`,
-`store dot com`) - and so is a seller for real money: a delivery, a price in dollars, a shop taking orders.
+`store dot com`, `store.c0m`, `wvvw.store`) - and so is a seller for real money: a delivery, a price in dollars, a shop taking orders.
 So is the anal joke (`anal [Thunderfury]`), link or no link. Which of the other kinds stay is a setting per kind:
 
 - `/gtf mode trade`: trade only.

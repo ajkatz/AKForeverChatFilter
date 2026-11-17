@@ -1,5 +1,13 @@
 # AKForeverChatFilter
 
+## Unreleased
+
+- **An address written with a digit for a letter is still an address.** "somestore.c0m" (seen in
+  Orgrimmar's General) passed as trade talk: the filter looked for ".com". Now ".c0m", ", c0m", "dot c0m",
+  "c0m" on its own, the letters spaced out after the dot (". c o m"), ".n3t", ".0rg" and a "www" drawn with
+  v's ("wvvw", "vvww", "vvvvvv") all count as a web
+  address - hidden in every public channel, like any other.
+
 ## 0.1.4
 
 - **A city's General and the game's own channels, filtered out of the box.** In a capital General is
