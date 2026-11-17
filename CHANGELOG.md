@@ -1,6 +1,6 @@
 # AKForeverChatFilter
 
-## Unreleased
+## 0.1.5
 
 - **An address written with a digit for a letter is still an address.** "somestore.c0m" (seen in
   Orgrimmar's General) passed as trade talk: the filter looked for ".com". Now ".c0m", ", c0m", "dot c0m",
